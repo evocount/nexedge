@@ -50,18 +50,18 @@ def setUnitStatus(UnitID,status):
 
 
 
-GroupID = "00010"
-status = "003"
-UnitID = "00012"
-message = "hallo Welt!"
+#GroupID = "00010"
+#status = "003"
+#UnitID = "00012"
+#message = "hallo Welt!"
 
-ser.isOpen()
-while True:
-	startcall()
-	time.sleep(1)
-	endcall()
-	time.sleep(1)
-	shortMessage2Unit(UnitID, message)
-	time.sleep(3)
-	setGroupStatus(GroupID, status)
-	time.sleep(3)	
+#ser.isOpen()
+#while True:
+	#startcall()
+	#time.sleep(1)
+	#endcall()
+	#time.sleep(1)
+	#longMessage2Unit(UnitID, message)
+	#time.sleep(10)
+	#setGroupStatus(GroupID, status)
+	#time.sleep(3)	

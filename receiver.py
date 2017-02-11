@@ -18,69 +18,89 @@ ser.bytesize=serial.EIGHTBITS
 def process_message(message):
 	sender = message[4:9] 		#extract sender ID
 	text = message[15:] 		#extract message
-	print "Sender-ID: " + sender
-	print "Message: " + text
-	#return text
+	#print "Sender-ID: " + sender
+	#print "Message: " + text
+	return text
 	
 #process status
 def process_status(message):
 	sender = message[4:9]
 	status = message[15:]
-	print "Sender-ID: " + sender
-	print "Status: " + status
-	#return status
+	#print "Sender-ID: " + sender
+	#print "Status: " + status
+	return status
 
 #process channel state
 def process_device(message):
 	hexmessage = message.encode("hex")
 	led = hexmessage[-3]
 	if led == "1": 			#receiving
-		print "receive"
+		return "receive"
 		
 	elif led == "2": 		#sending
-		print "send"
+		return "send"
 		
 	elif led == "4":		 #idle
-		print "orange" 
+		return "orange" 
 		
 	elif led == "0": 		 #free
-		print "channel free"
+		return "channel free"
 		
 	else:
-		print "no valid state"
+		return "no valid state"
 
 
 #handle serial input per string
 def handle_data(stringliste):
 
-    if re.search(r"gF",stringliste) != None: #SDM
-		process_message(stringliste)
-		
-    if re.search(r"gG",stringliste) != None: #LDM
-    	process_message(stringliste)
-    	
-    if re.search(r"gE",stringliste) != None: #StatusMessage
-    	print stringliste
-    	
-    if re.search(r"JA",stringliste) != None: #Device status
-    	process_device(stringliste)
+    if stringliste[1] == "g" and stringliste[2] == "F" : #SDM
+        answer = process_message(stringliste)
+        return answer
+        		
+    if stringliste[1] == "g" and stringliste[2] == "G" : #LDM
+    	answer = process_message(stringliste)
+    	#print "longmessage"
+        return answer
+            	
+    if stringliste[1] == "g" and stringliste[2] == "E" : #StatusMessage
+    	answer = stringliste
+        return answer
+            	
     
-    if re.search(r"JA",stringliste) != None: #Device status
-    	process_device(stringliste)
-
+    if stringliste[1] == "J" and stringliste[2] == "A":  #Device status
+    	answer = process_device(stringliste)
+        return answer
+    
+    if stringliste[1] == "J" and stringliste[2] == "E" : #DisplayContent
+    	return None
+    
+    if stringliste[1] == "0" : #transmission success
+    	return "success"
+    
+    if stringliste[1] == "1" : #transmission error
+    	return "error"
+    	
+    else:
+    	return None
 
 
 #read serial data per string
-def read_from_port(ser):
+def read_from_port(ser,q):
+	#print "entered thread"
 	stringliste= ""
-	while True:
-		for c in ser.read():
-			stringliste += str(c)
-			if c == '\x03':
-				handle_data(stringliste)
-				stringliste = "" 
-				break
+	if ser.read() == '\x02':
+		while True:
+			#print "startbit found"
+			for c in ser.read():
+				stringliste += str(c)
+				if c == '\x03':
+					#print "endbit found"
+					answer = handle_data(stringliste)
+					stringliste = "" 
+					if answer != None:
+					    #print answer
+					    q.put(answer)
+					break
 
 
-thread = threading.Thread(target=read_from_port, args=(ser,))
-thread.start()
+
