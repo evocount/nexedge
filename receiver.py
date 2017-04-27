@@ -1,17 +1,27 @@
 #!/usr/bin/python3
 
+import json
 import time
 import serial
 import threading
 import re
 
-# configure the serial connections
-ser = serial.Serial("/dev/ttyUSB0")
-#ser = serial.Serial("/dev/ttyAMA0")
-ser.baudrate = 9600
-ser.parity = serial.PARITY_NONE
-ser.stopbits = serial.STOPBITS_TWO
-ser.bytesize = serial.EIGHTBITS
+# configure the serial connections (the parameters differs on the device you are connecting to)
+#ser = serial.Serial("/dev/ttyUSB0")
+#ser.baudrate = 9600
+#ser.parity = serial.PARITY_NONE
+#ser.stopbits = serial.STOPBITS_TWO
+#ser.bytesize = serial.EIGHTBITS
+
+# load serial configuration from json formatted file
+with open("config.json", "r") as fpointer:
+    config = json.load(fpointer)
+
+ser = serial.Serial(config["serial"]["port"])  # as str in config.json
+ser.baudrate = config["serial"]["baudrate"]  # as int in config.json
+ser.parity = eval(config["serial"]["parity"])  # we have to evaluate the code in the file
+ser.stopbits = eval(config["serial"]["stopbits"])
+ser.bytesize = eval(config["serial"]["bytesize"])
 
 
 # process
