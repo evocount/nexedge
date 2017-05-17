@@ -1,99 +1,64 @@
 #!/usr/bin/python3
 
-import json
+import serial.threaded
+from queue import Queue
+import receiver
 import time
-import serial
-
-# configure the serial connections (the parameters differs on the device you are connecting to)
-#ser = serial.Serial("/dev/ttyUSB0")
-#ser.baudrate = 9600
-#ser.parity = serial.PARITY_NONE
-#ser.stopbits = serial.STOPBITS_TWO
-#ser.bytesize = serial.EIGHTBITS
-
-# load serial configuration from json formatted file
-with open("config.json", "r") as fpointer:
-    config = json.load(fpointer)
-
-ser = serial.Serial(config["serial"]["port"])  # as str in config.json
-ser.baudrate = config["serial"]["baudrate"]  # as int in config.json
-ser.parity = eval(config["serial"]["parity"])  # we have to evaluate the code in the file
-ser.stopbits = eval(config["serial"]["stopbits"])
-ser.bytesize = eval(config["serial"]["bytesize"])
-
-# some predefined standardfunctions
-
-# Callfunctions
-def startcall():
-    # encode str message to bytes
-    command_as_bytes = ("\x02" + "A" + "\x03").encode()
-
-    # write to serial port
-    ser.write(command_as_bytes)
 
 
-def endcall():
-    command_as_bytes = ("\x02" + "C" + "\x03").encode()
-    ser.write(command_as_bytes)
+def send_worker(
+        sender_queue: Queue,
+        protocol: serial.threaded.ReaderThread,
+        channel_status: receiver.ChannelStatus,
+        transmission_queue: Queue):
+    """
+    For use in a thread, reads the sender queue objects and writes to the serial port via the ReaderThread, but only
+    if the channel is free.
+    :param sender_queue: 
+    :param protocol: 
+    :param channel_status: 
+    :param transmission_queue:
+    :return: 
+    """
+    while True:
+        for m in iter(sender_queue.get, None):
+            # print(m)
+            command_send = False
+            """
+            Explaining this loop here a bit:
+            we like to send a command, but the the channel can be occupied -> case 1 wait time t
+            command was sent but there is no confirmation yet -> case 2.1 wait time t
+            queue is empty and command was not sent yet -> case 2.2 sent command and change variable to True
+            we got an error message -> case 3 sent again in next iteration by setting the flag to False
+            
+            In the first iteration case 2.2 should be triggered!
+            """
+            while True:
+                # channel is not free, do not attempt to send
+                if not channel_status.is_free():
+                    # print("waiting for channel to become free")
+                    time.sleep(0.1)
+                    continue
 
+                # command is sent, but no success or error message yet
+                if transmission_queue.empty() and command_send:
+                    # print("waiting for sending conformation")
+                    time.sleep(0.1)
+                    continue
+                elif transmission_queue.empty() and not command_send:
+                    protocol.write(m)
+                    command_send = True
+                    # print("sending {}".format(m))
+                    continue
 
-# message functions
-def shortGroupMessage(GroupID, message):
-    command_as_bytes = ("\x02" + "g" + "F" + "G" + GroupID + message + "\x03").encode()
-    ser.write(command_as_bytes)
+                # we got an error, send again in next loop
+                if not transmission_queue.get():
+                    command_send = False
+                    # print("sending error")
+                    continue
+                else:  # command was successful
+                    # print("sending successful")
+                    break
 
-
-def shortMessage2all(message):
-    command_as_bytes = ("\x02" + "g" + "F" + "G" + "00000" + message + "\x03").encode()
-    ser.write(command_as_bytes)
-
-
-def shortMessage2Unit(UnitID, message):
-    command_as_bytes = ("\x02" + "g" + "F" + "U" + UnitID + message + "\x03").encode()
-    ser.write(command_as_bytes)
-
-
-# ----
-
-def longGroupMessage(GroupID, message):
-    command_as_bytes = ("\x02" + "g" + "G" + "G" + GroupID + message + "\x03").encode()
-    ser.write(command_as_bytes)
-
-
-def longMessage2all(message):
-    command_as_bytes = ("\x02" + "g" + "G" + "G" + "00000" + message + "\x03").encode()
-    ser.write(command_as_bytes)
-
-
-def longMessage2Unit(UnitID, message):
-    command_as_bytes = ("\x02" + "g" + "G" + "U" + UnitID + message + "\x03").encode()
-    ser.write(command_as_bytes)
-
-
-# status functions
-def setGroupStatus(GroupID, status):
-    command_as_bytes = ("\x02" + "g" + "E" + "G" + GroupID + status + "\x03").encode()
-    ser.write(command_as_bytes)
-
-
-def setUnitStatus(UnitID, status):
-    command_as_bytes = ("\x02" + "g" + "E" + "U" + UnitID + status + "\x03").encode()
-    ser.write(command_as_bytes)
-
-
-
-    # GroupID = "00010"
-    # status = "003"
-    # UnitID = "00012"
-    # message = "hallo Welt!"
-
-    # ser.isOpen()
-    # while True:
-    # startcall()
-    # time.sleep(1)
-    # endcall()
-    # time.sleep(1)
-    # longMessage2Unit(UnitID, message)
-    # time.sleep(10)
-    # setGroupStatus(GroupID, status)
-    # time.sleep(3)
+        #  wait time t before looking at the queue again/it ran empty before
+        time.sleep(0.1)
