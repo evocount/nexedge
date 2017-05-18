@@ -2,6 +2,7 @@
 
 import serial.threaded
 import time
+import json
 from queue import Queue
 
 
@@ -176,3 +177,41 @@ class NexedgePacketizer(serial.threaded.FramedPacket):
 
         else:
             pass
+
+
+def unite_chunks(chunks: [bytes, ]) -> bytes:
+    data = b''
+    for c in chunks:
+        data = data + c
+
+    return data
+
+
+def unite_worker(answer_queue: Queue, data_queue: Queue):
+    while True:
+        startchunk = False
+        stopchunk = False
+        chunks = []
+
+        # get all chunks from the queue
+        while not stopchunk:
+            chunk = answer_queue.get()
+
+            if chunk[:4] == b'json':
+                startchunk = True
+                # strip the identifier
+                chunk = chunk[4:]
+
+            if chunk[-4:] == b'json':
+                stopchunk = True
+                # strip the identifier
+                chunk = chunk[:-4]
+
+            if startchunk:
+                chunks.append(chunk)
+
+        data_bytes = unite_chunks(chunks)
+        data_str = data_bytes.decode()
+        data = json.loads(data_str)
+        data_queue.put(data)
+
