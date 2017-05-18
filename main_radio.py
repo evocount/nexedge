@@ -1,86 +1,55 @@
+#!/usr/bin/python3
+
+import json
 import time
 import serial
+import serial.threaded
 import threading
-import re
-from Queue import Queue
+from queue import Queue
 import receiver
 import sender
-import sys
+import radio_commands
 
 
-testnachricht ="Hallo Welt hier spricht EvoCount"
-channel_free = True
+testnachricht = "Hallo Welt hier spricht EvoCount"
 
-# configure the serial connections 
-ser = serial.Serial ("/dev/ttyAMA0")
-ser.baudrate=9600
-ser.parity=serial.PARITY_NONE
-ser.stopbits=serial.STOPBITS_TWO
-ser.bytesize=serial.EIGHTBITS
+# load serial configuration from json formatted file
+with open("config.json", "r") as fpointer:
+    config = json.load(fpointer)
 
-#Setting up queueing and threading
-q = Queue(maxsize=0)
-thread = threading.Thread(target=receiver.read_from_port, args=(ser,q,))
-thread.setDaemon(True)
-thread.start()
+ser = serial.Serial(config["serial"]["port"])  # as str in config.json
+ser.baudrate = config["serial"]["baudrate"]  # as int in config.json
+ser.parity = eval(config["serial"]["parity"])  # we have to evaluate the code in the file
+ser.stopbits = eval(config["serial"]["stopbits"])
+ser.bytesize = eval(config["serial"]["bytesize"])
 
+# Setting up queueing
+sender_q = Queue(maxsize=0)
 
-#send function
-def send(ser,q, device_function, masterID):
-	send_success = False
-	timeout = 10 # [seconds]
-	global testnachricht #access global message for transmission
-	while send_success == False:  # try til success or timeout/error
-			sender.longMessage2Unit(masterID,testnachricht)
-			timeout_start = time.time()
-            
-			while time.time() < timeout_start + timeout: #set timeout of 10 seconds
-				serialqueue = q.get()
-				if serialqueue  == "success":
-					send_success = True
-					testnachricht = ""  #clear message
-					return
-				elif serialqueue == "error": #if device error
-					print "Error"
-					return
-				else:
-					pass
-			return #timeout
+# Setting up th reader thread
+protocol = serial.threaded.ReaderThread(ser, receiver.NexedgePacketizer)
 
+with protocol as receiver:
+    # Setting up sender thread
+    sender_thread = threading.Thread(target=sender.send_worker,
+                                     args=(sender_q, protocol, receiver.channel_status, receiver.transmission_queue,)
+                                     )
+    sender_thread.setDaemon(True)
+    sender_thread.start()
 
-#read from serial
-def read(ser,q):
-	try: #try if there's some data for us
-		data = q.get(False)  
-	except:
-		data = None
-	#function for setting channel status
-	if data != "channel free":
-		channel_free = False
-	else:
-		channnel_free = True
-	#------ here should follow some code
-	if data != None:
-		print data
+    # queue up a message
+    sender_q.put(radio_commands.longMessage2Unit(b"00011", testnachricht.encode()))
 
+    # loop until the answer_queue is None, this never happens
+    for m in iter(receiver.answer_queue.get, None):
+        # if we got a message, reply!
+        if "hallo" not in m.decode():  # do not produce a infinite loop
+            # 3 items to check if sending part works with multiple items in queue
+            sender_q.put(("\x02" + "g" + "G" + "U" + "00011" + "hallo alice" + "\x03").encode())
+            sender_q.put(("\x02" + "g" + "G" + "U" + "00011" + "hallo bob" + "\x03").encode())
+            sender_q.put(("\x02" + "g" + "G" + "U" + "00011" + "hallo carol" + "\x03").encode())
 
-#main process
-def main(ser,q,testnachricht):
-	device_function = "Slave" #Master or Slave device should be set in future externally
-	masterID = "00012" #should also beeing set via remote
-	while True:
-		if testnachricht != "": # transmit if there's a message
-			if channel_free == True:
-				print "start"
-				send(ser, q, device_function, masterID)
-				break
-			else:
-				pass
-		else:
-			pass
-		read(ser,q) # if not, be on standby and read from serial
-    
-while True:
-	main(ser,q,testnachricht)
-
-
+        # debugging output
+        print("message: {}". format(m.decode()))
+        print("channel free: {}".format(receiver.channel_status.is_free()))
+        print("queue size: answer={}\tsender={}".format(receiver.answer_queue.qsize(), sender_q.qsize()))
