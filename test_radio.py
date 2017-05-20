@@ -1,4 +1,4 @@
-from main_radio import Radio
+from radio import Radio
 import time
 import serial
 import json
@@ -28,4 +28,3 @@ with Radio(serialcon=ser, max_chunk_size=4096) as radio:
     for i in range(0, 100):
         print(radio.get())
         time.sleep(1)
-

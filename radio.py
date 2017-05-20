@@ -7,7 +7,7 @@ import threading
 from queue import Queue
 import receiver
 import sender
-from radio_commands import *
+from pcip_commands import *
 
 
 def split_to_chunks(data: bytes, chunksize: int):

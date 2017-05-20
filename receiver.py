@@ -214,4 +214,3 @@ def unite_worker(answer_queue: Queue, data_queue: Queue, stop_event: threading.E
         data_str = data_bytes.decode()
         data = json.loads(data_str)
         data_queue.put(data)
-
