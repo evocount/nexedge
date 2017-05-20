@@ -38,13 +38,13 @@ def send_worker(
                 # channel is not free, do not attempt to send
                 if not channel_status.is_free():
                     # print("waiting for channel to become free")
-                    time.sleep(0.1)
+                    stop_event.wait(timeout=0.1)
                     continue
 
                 # command is sent, but no success or error message yet
                 if transmission_queue.empty() and command_send:
                     # print("waiting for sending conformation")
-                    time.sleep(0.1)
+                    stop_event.wait(timeout=0.1)
                     continue
                 elif transmission_queue.empty() and not command_send:
                     protocol.write(m)
