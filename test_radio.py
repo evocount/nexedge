@@ -15,8 +15,9 @@ ser.parity = eval(config["serial"]["parity"])  # we have to evaluate the code in
 ser.stopbits = eval(config["serial"]["stopbits"])
 ser.bytesize = eval(config["serial"]["bytesize"])
 
-radio = Radio(serialcon=ser, max_chunk_size=4096)
+# radio = Radio(serialcon=ser, max_chunk_size=4096)
 
-while True:
-    print(radio.get())
-    time.sleep(2)
+with Radio(serialcon=ser, max_chunk_size=4096) as radio:
+    for i in range(0, 10):
+        print(radio.get())
+        time.sleep(2)

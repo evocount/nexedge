@@ -43,11 +43,13 @@ class Radio(object):
         self.receiver = self.protocol.__enter__()
 
         # Setting up sender thread
+        self.sender_stop = threading.Event()
         self.sender_thread = threading.Thread(target=sender.send_worker,
                                               args=(self.sender_queue,
                                                     self.protocol,
                                                     self.receiver.channel_status,
                                                     self.receiver.transmission_queue,
+                                                    self.sender_stop
                                                     )
                                               )
         self.sender_thread.setDaemon(True)
@@ -60,9 +62,11 @@ class Radio(object):
         # the answer_queue consists of json chunks, we need a thread to unite the chunks to valid json data
         # checksum validation would go there
         # Setting up unite thread
+        self.unite_stop = threading.Event()
         self.unite_thread = threading.Thread(target=receiver.unite_worker,
                                              args=(self.answer_queue,
                                                    self.data_queue,
+                                                   self.unite_stop,
                                                    )
                                              )
         self.unite_thread.setDaemon(True)
@@ -72,7 +76,20 @@ class Radio(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.protocol.__exit__()
+        # stop threads
+        self.stop()
+        # exit ReaderThread
+        self.protocol.__exit__(exc_type, exc_val, exc_tb)
+
+    def stop(self):
+        # stop unite_worker
+        self.unite_stop.set()
+
+        # stop send_worker
+        self.sender_stop.set()
+
+        # stop ReaderThread
+        self.protocol.stop()
 
     def send(self, data: dict, target: bytes):
         # get str representation of data

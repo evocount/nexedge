@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import serial.threaded
-import time
+import threading
 import json
 from queue import Queue
 
@@ -187,8 +187,8 @@ def unite_chunks(chunks: [bytes, ]) -> bytes:
     return data
 
 
-def unite_worker(answer_queue: Queue, data_queue: Queue):
-    while True:
+def unite_worker(answer_queue: Queue, data_queue: Queue, stop_event: threading.Event):
+    while not stop_event.is_set():
         startchunk = False
         stopchunk = False
         chunks = []

@@ -3,14 +3,15 @@
 import serial.threaded
 from queue import Queue
 import receiver
-import time
+import threading
 
 
 def send_worker(
         sender_queue: Queue,
         protocol: serial.threaded.ReaderThread,
         channel_status: receiver.ChannelStatus,
-        transmission_queue: Queue):
+        transmission_queue: Queue,
+        stop_event = threading.Event):
     """
     For use in a thread, reads the sender queue objects and writes to the serial port via the ReaderThread, but only
     if the channel is free.
@@ -20,7 +21,7 @@ def send_worker(
     :param transmission_queue:
     :return: 
     """
-    while True:
+    while not stop_event.is_set():
         for m in iter(sender_queue.get, None):
             # print(m)
             command_send = False
@@ -61,4 +62,4 @@ def send_worker(
                     break
 
         #  wait time t before looking at the queue again/it ran empty before
-        time.sleep(0.1)
+        stop_event.wait(timeout=0.1)
