@@ -11,7 +11,7 @@ test_json = json.loads(test_json_str)
 print(test_json)
 
 # load serial configuration from json formatted file
-with open("config.json", "r") as fpointer:
+with open("radio_settings.json", "r") as fpointer:
     config = json.load(fpointer)
 
 ser = serial.Serial(config["serial"]["port"])  # as str in config.json
