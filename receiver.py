@@ -42,38 +42,25 @@ class NexedgePacketizer(serial.threaded.FramedPacket):
     This class makes use of the built-in threading functionality of pySerial.
     See https://pyserial.readthedocs.io/en/latest/pyserial_api.html#serial.threaded.Packetizer for reference.
     
-    TERMINATOR is set to the stopbyte of a data sequence, this implies the first byte in the sequence is b'\x02'
+    FramedPacket forwards Packets defined start (b'\x02') and stop sequences (b'\x03') to the handle_packet method.
     """
-    # TERMINATOR is equal to the stopbyte \x03
     START = b'\x02'
     STOP = b'\x03'
 
     # there will be 3 queues. 1 manages the messages, 1 for the status messages and 1 for the transmission reports
     answer_queue = Queue(maxsize=0)
     status_queue = Queue(maxsize=0)
-    transmission_queue = Queue(maxsize=1) # there should only be 1 entry in this queue at a given time
+    transmission_queue = Queue(maxsize=1)  # there should only be 1 entry in this queue at a given time
 
     # radio channel status object
     channel_status = ChannelStatus()
 
-    # def __init__(self, queue: Queue, channel_status: ChannelStatus):
     def __init__(self):
 
         """"
-        The data will be stored in a queue, the queue is given via parameter in the constructor.
+        At the moment this only invoces the __init__() of the parent class.
         """
         super(NexedgePacketizer, self).__init__()
-
-        # self.answer_queue = queue
-
-        # self.channel_status = channel_status
-        # self.channel_status = ChannelStatus()
-
-    # def set_channel_status(self, channel_status):
-    #     self.channel_status = channel_status
-    #
-    # def set_answer_queue(self, answer_queue):
-    #     self.answer_queue = answer_queue
 
     def handle_packet(self, packet: bytes):
         """
@@ -120,30 +107,21 @@ class NexedgePacketizer(serial.threaded.FramedPacket):
         # information is encoded in the last byte
         led = message[-1]
 
-        # setting channel status
-        # self.channel_free = False
-
         # the hex status values (see gitlab wiki) are converted to int
         if led == int(0x82):  # receiving/green
             self.channel_status.set_green()
-            # return "receive"
 
         elif led == int(0x81):  # sending/red
             self.channel_status.set_red()
-            # return "send"
 
         elif led == int(0x84):  # idle/orange
             self.channel_status.set_orange()
-            # return "orange"
 
         elif led == int(0x80):  # free/led off
             self.channel_status.set_free()
-            # self.channel_free = True
-            # return "channel free"
 
         else:
             pass
-            # return "no valid state"
 
     def handle_data(self, message: bytes):
         """
