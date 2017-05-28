@@ -22,8 +22,8 @@ print(test_json)
 with open("radio_settings.json", "r") as fpointer:
     config = json.load(fpointer)
 
-ser = serial.Serial(config["serial"]["port"])  # as str in config.json
-ser.baudrate = config["serial"]["baudrate"]  # as int in config.json
+ser = serial.Serial(config["serial"]["port"])  # as str in radio_settings.json
+ser.baudrate = config["serial"]["baudrate"]  # as int in radio_settings.json
 ser.parity = eval(config["serial"]["parity"])  # we have to evaluate the code in the file
 ser.stopbits = eval(config["serial"]["stopbits"])
 ser.bytesize = eval(config["serial"]["bytesize"])
