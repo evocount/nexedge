@@ -8,7 +8,10 @@
   },
     "sending": {
     "max_retries": 2,
-    "channel_free_timeout": 10,
+    "channel_timeout": 10,
     "confirmation_timeout": 10
+  },
+    "device": {
+    "ldm_size": 4096
   }
 }

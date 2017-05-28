@@ -12,7 +12,7 @@ import serial.threaded
 import threading
 from queue import Queue
 import receiver
-import sender
+from sender import send_command
 from pcip_commands import *
 
 
@@ -33,14 +33,22 @@ def split_to_chunks(data: bytes, chunksize: int):
 
 class Radio(object):
     # setting up sender queue
-    sender_queue = Queue(maxsize=0)
+    # sender_queue = Queue(maxsize=0)
 
     # setting up data queue, json data goes here
     data_queue = Queue(maxsize=0)
 
-    def __init__(self, serialcon: serial.Serial, max_chunk_size: int=4096):
+    def __init__(self,
+                 serialcon: serial.Serial,
+                 max_chunk_size: int,
+                 max_retries: int,
+                 channel_timeout: int,
+                 confirmation_timeout: int):
         self.serial_connection = serialcon
         self.max_chunk_size = max_chunk_size
+        self.max_retries = max_retries
+        self.channel_timeout = channel_timeout
+        self.confirmation_timeout = confirmation_timeout
 
         # Setting up th reader thread
         self.protocol = serial.threaded.ReaderThread(self.serial_connection, receiver.NexedgePacketizer)
@@ -48,18 +56,21 @@ class Radio(object):
         # get the instance
         self.receiver = self.protocol.__enter__()
 
+        self.channel_status = self.receiver.channel_status
+        self.transmission_queue = self.receiver.transmission_queue
+
         # Setting up sender thread
-        self.sender_stop = threading.Event()
-        self.sender_thread = threading.Thread(target=sender.send_worker,
-                                              args=(self.sender_queue,
-                                                    self.protocol,
-                                                    self.receiver.channel_status,
-                                                    self.receiver.transmission_queue,
-                                                    self.sender_stop
-                                                    )
-                                              )
-        self.sender_thread.setDaemon(True)
-        self.sender_thread.start()
+        #self.sender_stop = threading.Event()
+        #self.sender_thread = threading.Thread(target=sender.send_worker,
+        #                                      args=(self.sender_queue,
+        #                                            self.protocol,
+        #                                            self.receiver.channel_status,
+        #                                            self.receiver.transmission_queue,
+        #                                            self.sender_stop
+        #                                            )
+        #                                      )
+        #self.sender_thread.setDaemon(True)
+        #self.sender_thread.start()
 
         # mapping queue
         self.answer_queue = self.receiver.answer_queue
@@ -92,7 +103,7 @@ class Radio(object):
         self.unite_stop.set()
 
         # stop send_worker
-        self.sender_stop.set()
+        #self.sender_stop.set()
 
         # stop ReaderThread
         self.protocol.stop()
@@ -110,7 +121,18 @@ class Radio(object):
 
         for c in chunks:
             command = longMessage2Unit(unitID=target, message=c)
-            self.sender_queue.put(command)
+            #self.sender_queue.put(command)
+            try:
+                send_command(command=command,
+                         protocol=self.protocol,
+                         channel_status=self.channel_status,
+                         transmission_queue=self.transmission_queue,
+                         max_retries=self.max_retries,
+                         channel_timeout=self.channel_timeout,
+                         confirmation_timeout=self.confirmation_timeout)
+            except:
+                # do something
+                pass
 
     def get(self) -> dict or None:
         return None if self.data_queue.empty() else self.data_queue.get()
