@@ -1,3 +1,11 @@
+"""
+Copyright (C) EvoCount UG - All Rights Reserved
+Unauthorized copying of this file, via any medium is strictly prohibited
+Proprietary and confidential
+
+Suthep Pomjaksilp <sp@laz0r.de> 2017
+"""
+
 from radio import Radio
 import time
 import serial
