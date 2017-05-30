@@ -33,9 +33,6 @@ def split_to_chunks(data: bytes, chunksize: int):
 
 
 class Radio(object):
-    # setting up sender queue
-    # sender_queue = Queue(maxsize=0)
-
     # setting up data queue, json data goes here
     data_queue = Queue(maxsize=0)
 
@@ -62,19 +59,6 @@ class Radio(object):
 
         # setting up a pool for sending, only 1 worker because only one send at a given time
         self.send_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-
-        # Setting up sender thread
-        # self.sender_stop = threading.Event()
-        # self.sender_thread = threading.Thread(target=sender.send_worker,
-        #                                      args=(self.sender_queue,
-        #                                            self.protocol,
-        #                                            self.receiver.channel_status,
-        #                                            self.receiver.transmission_queue,
-        #                                            self.sender_stop
-        #                                            )
-        #                                      )
-        # self.sender_thread.setDaemon(True)
-        # self.sender_thread.start()
 
         # mapping queue
         self.answer_queue = self.receiver.answer_queue
@@ -124,31 +108,16 @@ class Radio(object):
         chunks[0] = b'json' + chunks[0]
         chunks[-1] = chunks[-1] + b'json'
 
-        # for c in chunks:
-        #     command = longMessage2Unit(unitID=target, message=c)
-        #     # self.sender_queue.put(command)
-
-        future = self.pool.submit(send_command, ([longMessage2Unit(unitID=target, message=c) for c in chunks],
-                                                 self.protocol,
-                                                 self.channel_status,
-                                                 self.transmission_queue,
-                                                 self.max_retries,
-                                                 self.channel_timeout,
-                                                 self.confirmation_timeout))
+        future = self.send_pool.submit(send_command,
+                                       [longMessage2Unit(unitID=target, message=c) for c in chunks],
+                                       self.protocol,
+                                       self.channel_status,
+                                       self.transmission_queue,
+                                       self.max_retries,
+                                       self.channel_timeout,
+                                       self.confirmation_timeout)
 
         return future
-
-        # try:
-        #     send_command(command=command,
-        #                  protocol=self.protocol,
-        #                  channel_status=self.channel_status,
-        #                  transmission_queue=self.transmission_queue,
-        #                  max_retries=self.max_retries,
-        #                  channel_timeout=self.channel_timeout,
-        #                  confirmation_timeout=self.confirmation_timeout)
-        # except:
-        #     # do something
-        #     pass
 
     def get(self) -> dict or None:
         return None if self.data_queue.empty() else self.data_queue.get()

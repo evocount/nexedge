@@ -17,7 +17,7 @@ class ChannelStatus(object):
     This class contains the status of the radio channel as indicated by the led.
     """
     channel_free = True
-    radio_status = "off"
+    radio_status = "unknown"
 
     def is_free(self):
         """

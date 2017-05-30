@@ -160,9 +160,12 @@ def send_command(
                     command_send = False
                     # reset the channel timeout
                     time_channel = time.time()
-                    # print("retry")
+                    print("retry")
                     continue
             # confirmation success -> success
             else:
                 # a sign of success!
                 success = True
+
+    # we got through the loop!
+    return True
