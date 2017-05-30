@@ -181,12 +181,16 @@ def unite_worker(answer_queue: Queue, data_queue: Queue, stop_event: threading.E
         while not stopchunk:
             chunk = answer_queue.get()
 
+            # this is the first chunk
             if chunk[:4] == b'json':
                 startchunk = True
+                # clear the list in chunks in case a previous transmission was not complete!
+                chunks = []
                 # strip the identifier
                 chunk = chunk[4:]
 
-            if chunk[-4:] == b'json':
+            # this is the last chunk of a full transmission because startchunk is set
+            if startchunk and chunk[-4:] == b'json':
                 stopchunk = True
                 # strip the identifier
                 chunk = chunk[:-4]
