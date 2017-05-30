@@ -14,6 +14,7 @@ from queue import Queue
 import receiver
 from sender import send_command
 from pcip_commands import *
+import concurrent.futures
 
 
 def split_to_chunks(data: bytes, chunksize: int):
@@ -59,9 +60,12 @@ class Radio(object):
         self.channel_status = self.receiver.channel_status
         self.transmission_queue = self.receiver.transmission_queue
 
+        # setting up a pool for sending, only 1 worker because only one send at a given time
+        self.send_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
         # Setting up sender thread
-        #self.sender_stop = threading.Event()
-        #self.sender_thread = threading.Thread(target=sender.send_worker,
+        # self.sender_stop = threading.Event()
+        # self.sender_thread = threading.Thread(target=sender.send_worker,
         #                                      args=(self.sender_queue,
         #                                            self.protocol,
         #                                            self.receiver.channel_status,
@@ -69,8 +73,8 @@ class Radio(object):
         #                                            self.sender_stop
         #                                            )
         #                                      )
-        #self.sender_thread.setDaemon(True)
-        #self.sender_thread.start()
+        # self.sender_thread.setDaemon(True)
+        # self.sender_thread.start()
 
         # mapping queue
         self.answer_queue = self.receiver.answer_queue
@@ -103,36 +107,48 @@ class Radio(object):
         self.unite_stop.set()
 
         # stop send_worker
-        #self.sender_stop.set()
+        # self.sender_stop.set()
 
         # stop ReaderThread
         self.protocol.stop()
 
-    def send(self, data: dict, target: bytes):
+    def send(self, data: dict, target: bytes) -> concurrent.futures.Future:
         # get str representation of data
         data_str = json.dumps(data, separators=(',', ':'))  # compact
         data_bytes = data_str.encode()
 
-        chunks = [c for c in split_to_chunks(data=data_bytes, chunksize=(self.max_chunk_size-8))]  # make room for flag
+        chunks = [c for c in
+                  split_to_chunks(data=data_bytes, chunksize=(self.max_chunk_size - 8))]  # make room for flag
 
         # first chunk starts with b'json' and last chunk ends with b'json'
         chunks[0] = b'json' + chunks[0]
         chunks[-1] = chunks[-1] + b'json'
 
-        for c in chunks:
-            command = longMessage2Unit(unitID=target, message=c)
-            #self.sender_queue.put(command)
-            try:
-                send_command(command=command,
-                         protocol=self.protocol,
-                         channel_status=self.channel_status,
-                         transmission_queue=self.transmission_queue,
-                         max_retries=self.max_retries,
-                         channel_timeout=self.channel_timeout,
-                         confirmation_timeout=self.confirmation_timeout)
-            except:
-                # do something
-                pass
+        # for c in chunks:
+        #     command = longMessage2Unit(unitID=target, message=c)
+        #     # self.sender_queue.put(command)
+
+        future = self.pool.submit(send_command, ([longMessage2Unit(unitID=target, message=c) for c in chunks],
+                                                 self.protocol,
+                                                 self.channel_status,
+                                                 self.transmission_queue,
+                                                 self.max_retries,
+                                                 self.channel_timeout,
+                                                 self.confirmation_timeout))
+
+        return future
+
+        # try:
+        #     send_command(command=command,
+        #                  protocol=self.protocol,
+        #                  channel_status=self.channel_status,
+        #                  transmission_queue=self.transmission_queue,
+        #                  max_retries=self.max_retries,
+        #                  channel_timeout=self.channel_timeout,
+        #                  confirmation_timeout=self.confirmation_timeout)
+        # except:
+        #     # do something
+        #     pass
 
     def get(self) -> dict or None:
         return None if self.data_queue.empty() else self.data_queue.get()
