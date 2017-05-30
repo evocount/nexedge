@@ -13,6 +13,18 @@ import threading
 import time
 
 
+class ChannelTimeout(Exception):
+    pass
+
+
+class ConfirmationTimeout(Exception):
+    pass
+
+
+class SendMaxRetries(Exception):
+    pass
+
+
 def send_worker(
         sender_queue: Queue,
         protocol: serial.threaded.ReaderThread,
@@ -77,9 +89,9 @@ def send_command(
         protocol: serial.threaded.ReaderThread,
         channel_status: receiver.ChannelStatus,
         transmission_queue: Queue,
-        max_retries : int,
-        channel_timeout : int,
-        confirmation_timeout : int):
+        max_retries: int,
+        channel_timeout: int,
+        confirmation_timeout: int):
     """
     For use in a thread, reads the sender queue objects and writes to the serial port via the ReaderThread, but only
     if the channel is free.
@@ -116,7 +128,7 @@ def send_command(
             # channel is timed out -> abort
             if (time_channel + channel_timeout) <= time.time():
                 # raise Error
-                return False
+                raise ChannelTimeout
             # no timeout -> go to sleep
             else:
                 # print("waiting for channel to become free")
@@ -130,7 +142,7 @@ def send_command(
             # confirmation is times out -> abort
             if (time_send + confirmation_timeout) <= time.time():
                 # raise Error
-                return False
+                raise ConfirmationTimeout
             # no timeout -> got to sleep
             else:
                 time.sleep(snooze)
@@ -141,7 +153,7 @@ def send_command(
             # max_retries reached -> abort
             if send_tries >= max_retries:
                 # raise Error
-                return False
+                raise SendMaxRetries
             # -> try again in the next loop
             else:
                 command_send = False
