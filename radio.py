@@ -38,15 +38,9 @@ class Radio(object):
 
     def __init__(self,
                  serialcon: serial.Serial,
-                 max_chunk_size: int,
-                 max_retries: int,
-                 channel_timeout: int,
-                 confirmation_timeout: int):
+                 max_chunk_size: int):
         self.serial_connection = serialcon
         self.max_chunk_size = max_chunk_size
-        self.max_retries = max_retries
-        self.channel_timeout = channel_timeout
-        self.confirmation_timeout = confirmation_timeout
 
         # Setting up th reader thread
         self.protocol = serial.threaded.ReaderThread(self.serial_connection, receiver.NexedgePacketizer)
@@ -71,8 +65,7 @@ class Radio(object):
         self.unite_thread = threading.Thread(target=receiver.unite_worker,
                                              args=(self.answer_queue,
                                                    self.data_queue,
-                                                   self.unite_stop,
-                                                   )
+                                                   self.unite_stop)
                                              )
         self.unite_thread.setDaemon(True)
         self.unite_thread.start()
@@ -90,13 +83,13 @@ class Radio(object):
         # stop unite_worker
         self.unite_stop.set()
 
-        # stop send_worker
-        # self.sender_stop.set()
+        # stop the sender pool
+        self.pool.shutdown()
 
         # stop ReaderThread
         self.protocol.stop()
 
-    def send(self, data: dict, target: bytes) -> concurrent.futures.Future:
+    def send(self, data: dict, target: bytes, **kwargs) -> concurrent.futures.Future:
         # get str representation of data
         data_str = json.dumps(data, separators=(',', ':'))  # compact
         data_bytes = data_str.encode()
@@ -113,9 +106,7 @@ class Radio(object):
                                        self.protocol,
                                        self.channel_status,
                                        self.transmission_queue,
-                                       self.max_retries,
-                                       self.channel_timeout,
-                                       self.confirmation_timeout)
+                                       **kwargs)
 
         return future
 
