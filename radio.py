@@ -84,7 +84,7 @@ class Radio(object):
         self.unite_stop.set()
 
         # stop the sender pool
-        self.pool.shutdown()
+        self.send_pool.shutdown()
 
         # stop ReaderThread
         self.protocol.stop()

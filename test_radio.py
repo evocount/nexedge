@@ -39,12 +39,15 @@ ser.bytesize = eval(config["serial"]["bytesize"])
 # radio = Radio(serialcon=ser, max_chunk_size=4096)
 
 with Radio(serialcon=ser,
-           max_chunk_size=4096,
-           max_retries=config["sending"]["max_retries"],
-           channel_timeout=config["sending"]["channel_timeout"],
-           confirmation_timeout=config["sending"]["confirmation_timeout"]) as radio:
+           max_chunk_size=4096) as radio:
     print(radio.get())
     futures = [radio.send(test_json, b'00011') for i in range(0, 2)]
+
+    # futures = [radio.send(test_json,
+    #                       b'00011',
+    #                       max_retries=config["sending"]["max_retries"],
+    #                       channel_timeout=config["sending"]["channel_timeout"],
+    #                       confirmation_timeout=config["sending"]["confirmation_timeout"]) for i in range(0, 2)]
 
     for fu in as_completed(futures):
         try:
