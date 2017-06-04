@@ -5,5 +5,13 @@
     "parity": "serial.PARITY_NONE",
     "stopbits": "serial.STOPBITS_TWO",
     "bytesize": "serial.EIGHTBITS"
+  },
+    "sending": {
+    "max_retries": 2,
+    "channel_timeout": 10,
+    "confirmation_timeout": 60
+  },
+    "device": {
+    "ldm_size": 4096
   }
 }

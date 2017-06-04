@@ -12,8 +12,9 @@ import serial.threaded
 import threading
 from queue import Queue
 import receiver
-import sender
+from sender import send_command
 from pcip_commands import *
+import concurrent.futures
 
 
 def split_to_chunks(data: bytes, chunksize: int):
@@ -32,13 +33,12 @@ def split_to_chunks(data: bytes, chunksize: int):
 
 
 class Radio(object):
-    # setting up sender queue
-    sender_queue = Queue(maxsize=0)
-
     # setting up data queue, json data goes here
     data_queue = Queue(maxsize=0)
 
-    def __init__(self, serialcon: serial.Serial, max_chunk_size: int=4096):
+    def __init__(self,
+                 serialcon: serial.Serial,
+                 max_chunk_size: int):
         self.serial_connection = serialcon
         self.max_chunk_size = max_chunk_size
 
@@ -48,18 +48,11 @@ class Radio(object):
         # get the instance
         self.receiver = self.protocol.__enter__()
 
-        # Setting up sender thread
-        self.sender_stop = threading.Event()
-        self.sender_thread = threading.Thread(target=sender.send_worker,
-                                              args=(self.sender_queue,
-                                                    self.protocol,
-                                                    self.receiver.channel_status,
-                                                    self.receiver.transmission_queue,
-                                                    self.sender_stop
-                                                    )
-                                              )
-        self.sender_thread.setDaemon(True)
-        self.sender_thread.start()
+        self.channel_status = self.receiver.channel_status
+        self.transmission_queue = self.receiver.transmission_queue
+
+        # setting up a pool for sending, only 1 worker because only one send at a given time
+        self.send_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
         # mapping queue
         self.answer_queue = self.receiver.answer_queue
@@ -72,8 +65,7 @@ class Radio(object):
         self.unite_thread = threading.Thread(target=receiver.unite_worker,
                                              args=(self.answer_queue,
                                                    self.data_queue,
-                                                   self.unite_stop,
-                                                   )
+                                                   self.unite_stop)
                                              )
         self.unite_thread.setDaemon(True)
         self.unite_thread.start()
@@ -91,26 +83,32 @@ class Radio(object):
         # stop unite_worker
         self.unite_stop.set()
 
-        # stop send_worker
-        self.sender_stop.set()
+        # stop the sender pool
+        self.send_pool.shutdown()
 
         # stop ReaderThread
         self.protocol.stop()
 
-    def send(self, data: dict, target: bytes):
+    def send(self, data: dict, target: bytes, **kwargs) -> concurrent.futures.Future:
         # get str representation of data
         data_str = json.dumps(data, separators=(',', ':'))  # compact
         data_bytes = data_str.encode()
 
-        chunks = [c for c in split_to_chunks(data=data_bytes, chunksize=(self.max_chunk_size-8))]  # make room for flag
+        chunks = [c for c in
+                  split_to_chunks(data=data_bytes, chunksize=(self.max_chunk_size - 8))]  # make room for flag
 
         # first chunk starts with b'json' and last chunk ends with b'json'
         chunks[0] = b'json' + chunks[0]
         chunks[-1] = chunks[-1] + b'json'
 
-        for c in chunks:
-            command = longMessage2Unit(unitID=target, message=c)
-            self.sender_queue.put(command)
+        future = self.send_pool.submit(send_command,
+                                       [longMessage2Unit(unitID=target, message=c) for c in chunks],
+                                       self.protocol,
+                                       self.channel_status,
+                                       self.transmission_queue,
+                                       **kwargs)
+
+        return future
 
     def get(self) -> dict or None:
         return None if self.data_queue.empty() else self.data_queue.get()
