@@ -10,6 +10,7 @@ from radio import Radio
 import time
 import serial
 import json
+import queue
 from concurrent.futures import as_completed
 
 testnachricht = "Hallo Welt hier spricht EvoCount"
@@ -23,7 +24,7 @@ long_json_str = '{"id": "' + long_str + '"}'
 
 # test_json = json.loads(long_json_str)
 
-print(len(long_json_str.encode()))
+#print(len(long_json_str.encode()))
 # print(test_json)
 
 # load serial configuration from json formatted file
@@ -40,18 +41,21 @@ ser.bytesize = eval(config["serial"]["bytesize"])
 
 with Radio(serialcon=ser,
            max_chunk_size=4096) as radio:
-    print(radio.get())
-    futures = [radio.send(test_json, b'00011') for i in range(0, 2)]
 
-    # futures = [radio.send(test_json,
-    #                       b'00011',
-    #                       max_retries=config["sending"]["max_retries"],
-    #                       channel_timeout=config["sending"]["channel_timeout"],
-    #                       confirmation_timeout=config["sending"]["confirmation_timeout"]) for i in range(0, 2)]
+    futures_send = [radio.send(test_json, b'00011') for i in range(0, 2)]
 
-    for fu in as_completed(futures):
+    futures_receive = [radio.get() for i in range(0, 2)]
+
+    for fu in as_completed(futures_send):
         try:
             response = fu.result()
             print(response)
         except Exception as e:
             print("Exceptions")
+
+    for fu in as_completed(futures_receive):
+        try:
+            response = fu.result()
+            print(response)
+        except queue.Empty:
+            print("unifying timeout")

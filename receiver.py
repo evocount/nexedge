@@ -171,34 +171,36 @@ def unite_chunks(chunks: [bytes, ]) -> bytes:
     return data
 
 
-def unite_worker(answer_queue: Queue, data_queue: Queue, stop_event: threading.Event):
-    while not stop_event.is_set():
-        startchunk = False
-        stopchunk = False
-        chunks = []
+def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
+    startchunk = False
+    stopchunk = False
+    chunks = []
 
-        # get all chunks from the queue
-        while not stopchunk:
-            chunk = answer_queue.get()
+    # get all chunks from the queue
+    while not stopchunk:
+        # the timeout is set per chunk
+        #  if the timeout is reached the queue.Empty exception is raised
+        chunk = answer_queue.get(timeout=receive_timeout)
 
-            # this is the first chunk
-            if chunk[:4] == b'json':
-                startchunk = True
-                # clear the list in chunks in case a previous transmission was not complete!
-                chunks = []
-                # strip the identifier
-                chunk = chunk[4:]
+        # this is the first chunk
+        if chunk[:4] == b'json':
+            startchunk = True
+            # clear the list in chunks in case a previous transmission was not complete!
+            chunks = []
+            # strip the identifier
+            chunk = chunk[4:]
 
-            # this is the last chunk of a full transmission because startchunk is set
-            if startchunk and chunk[-4:] == b'json':
-                stopchunk = True
-                # strip the identifier
-                chunk = chunk[:-4]
+        # this is the last chunk of a full transmission because startchunk is set
+        if startchunk and chunk[-4:] == b'json':
+            stopchunk = True
+            # strip the identifier
+            chunk = chunk[:-4]
 
-            if startchunk:
-                chunks.append(chunk)
+        if startchunk:
+            chunks.append(chunk)
 
-        data_bytes = unite_chunks(chunks)
-        data_str = data_bytes.decode()
-        data = json.loads(data_str)
-        data_queue.put(data)
+    data_bytes = unite_chunks(chunks)
+    data_str = data_bytes.decode()
+    data = json.loads(data_str)
+
+    return data
