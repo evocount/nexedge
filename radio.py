@@ -33,8 +33,6 @@ def split_to_chunks(data: bytes, chunksize: int):
 
 
 class Radio(object):
-    # setting up data queue, json data goes here
-    data_queue = Queue(maxsize=0)
 
     def __init__(self,
                  serialcon: serial.Serial,
@@ -60,15 +58,8 @@ class Radio(object):
 
         # the answer_queue consists of json chunks, we need a thread to unite the chunks to valid json data
         # checksum validation would go there
-        # Setting up unite thread
-        self.unite_stop = threading.Event()
-        self.unite_thread = threading.Thread(target=receiver.unite_worker,
-                                             args=(self.answer_queue,
-                                                   self.data_queue,
-                                                   self.unite_stop)
-                                             )
-        self.unite_thread.setDaemon(True)
-        self.unite_thread.start()
+        # setting up a pool for unifying received chunks, there should be only 1 worker working at a time
+        self.unite_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def __enter__(self):
         return self
@@ -80,8 +71,8 @@ class Radio(object):
         self.protocol.__exit__(exc_type, exc_val, exc_tb)
 
     def stop(self):
-        # stop unite_worker
-        self.unite_stop.set()
+        # stop unifying pool
+        self.unite_pool.shutdown()
 
         # stop the sender pool
         self.send_pool.shutdown()
@@ -110,5 +101,11 @@ class Radio(object):
 
         return future
 
-    def get(self) -> dict or None:
-        return None if self.data_queue.empty() else self.data_queue.get()
+    def get(self, **kwargs) -> concurrent.futures.Future:
+        # submit a task to the pool, when a complete data set is retrieved, the future will resolve
+        # if the timeout (default 60s) per chunk is reached, the queue.Empty exception will be raised in the future
+        future = self.unite_pool.submit(receiver.unite,
+                                        self.answer_queue,
+                                        **kwargs)
+
+        return future
