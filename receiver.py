@@ -7,13 +7,9 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
 import serial.threaded
-import queue
+import zlib
 import json
 from queue import Queue
-
-
-class ReceiveTimeout(Exception):
-    pass
 
 
 class ChannelStatus(object):
@@ -184,10 +180,7 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
     while not stopchunk:
         # the timeout is set per chunk
         #  if the timeout is reached the queue.Empty exception is raised
-        try:
-            chunk = answer_queue.get(timeout=receive_timeout)
-        except queue.Empty:
-            raise ReceiveTimeout
+        chunk = answer_queue.get(timeout=receive_timeout)
 
         # this is the first chunk
         if chunk[:4] == b'json':
@@ -206,7 +199,11 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
         if startchunk:
             chunks.append(chunk)
 
-    data_bytes = unite_chunks(chunks)
+    data_compressed = unite_chunks(chunks)
+
+    # decompression
+    data_bytes = zlib.decompress(data_compressed)
+
     data_str = data_bytes.decode()
     data = json.loads(data_str)
 
