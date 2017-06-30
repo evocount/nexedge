@@ -7,7 +7,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
 import serial.threaded
-import threading
+import zlib
 import json
 from queue import Queue
 
@@ -199,7 +199,11 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
         if startchunk:
             chunks.append(chunk)
 
-    data_bytes = unite_chunks(chunks)
+    data_compressed = unite_chunks(chunks)
+
+    # decompression
+    data_bytes = zlib.decompress(data_compressed)
+
     data_str = data_bytes.decode()
     data = json.loads(data_str)
 

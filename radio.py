@@ -9,8 +9,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 import json
 import serial
 import serial.threaded
-import threading
-from queue import Queue
+import zlib
 import receiver
 from sender import send_command
 from pcip_commands import *
@@ -85,8 +84,11 @@ class Radio(object):
         data_str = json.dumps(data, separators=(',', ':'))  # compact
         data_bytes = data_str.encode()
 
+        # compression with zlib
+        data_compressed = zlib.compress(data_bytes)
+
         chunks = [c for c in
-                  split_to_chunks(data=data_bytes, chunksize=(self.max_chunk_size - 8))]  # make room for flag
+                  split_to_chunks(data=data_compressed, chunksize=(self.max_chunk_size - 8))]  # make room for flag
 
         # first chunk starts with b'json' and last chunk ends with b'json'
         chunks[0] = b'json' + chunks[0]
