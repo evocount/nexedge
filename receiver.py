@@ -166,6 +166,11 @@ class NexedgePacketizer(serial.threaded.FramedPacket):
 
 
 def unite_chunks(chunks: [bytes, ]) -> bytes:
+    """
+    Concats a list of chunks (consiting of bytes)
+    :param chunks: [bytes, ]
+    :return: bytes
+    """
     data = b''
     for c in chunks:
         data = data + c
@@ -174,6 +179,16 @@ def unite_chunks(chunks: [bytes, ]) -> bytes:
 
 
 def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> dict:
+    """
+    To be used in a ThreadPool.
+    Takes the answer_queue and pops items until the starting chunk is found (starts with b'json'), until the stopping
+    chunk is found (ends with b'json'), all chunks are appended to a list.
+    If compression is enabled on class level, the joined chunks are decompressed and the checksum is verified.
+    :param answer_queue: Queue
+    :param compression: bool
+    :param receive_timeout: int = 60
+    :return: dict
+    """
     startchunk = False
     stopchunk = False
     chunks = []

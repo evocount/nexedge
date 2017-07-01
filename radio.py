@@ -33,11 +33,24 @@ def split_to_chunks(data: bytes, chunksize: int):
 
 
 class Radio(object):
+    """
+    Main radio communication object. Can be used in a with statement.
+
+    Example:
+        with Radio(serialcon=ser, max_chunk_size=4096) as radio:
+            do_something()
+    """
 
     def __init__(self,
                  serialcon: serial.Serial,
                  max_chunk_size: int,
                  compression: bool = True):
+        """
+        This method starts all threads and maps the queues.
+        :param serialcon: serial.Serial
+        :param max_chunk_size: int
+        :param compression: bool = True
+        """
         self.serial_connection = serialcon
         self.max_chunk_size = max_chunk_size
         self.compression = compression
@@ -64,15 +77,30 @@ class Radio(object):
         self.unite_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def __enter__(self):
+        """
+        Necessary for usage in with clause
+        :return: self
+        """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Teardown method.
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
         # stop threads
         self.stop()
         # exit ReaderThread
         self.protocol.__exit__(exc_type, exc_val, exc_tb)
 
     def stop(self):
+        """
+        Stops ReaderThread and the pools.
+        :return:
+        """
         # stop unifying pool
         self.unite_pool.shutdown()
 
@@ -83,6 +111,15 @@ class Radio(object):
         self.protocol.stop()
 
     def send(self, data: dict, target: bytes, **kwargs) -> concurrent.futures.Future:
+        """
+        Send json encoded data via radio. The target uid is expected as bytes.
+        The method returns a future with will resolve once the sending is finished.
+        It resolves to either a bool or raises an exception.
+        :param data: dict
+        :param target: bytes
+        :param kwargs:
+        :return: concurrent.futures.Future
+        """
         # get str representation of data
         data_str = json.dumps(data, separators=(',', ':'))  # compact
         data_bytes = data_str.encode()
@@ -116,6 +153,13 @@ class Radio(object):
         return future
 
     def get(self, **kwargs) -> concurrent.futures.Future:
+        """
+        Receive data via radio.
+        The method returns a future with will resolve once a complete data set is received in the anwer_queue.
+        It resolves to either a dict or raises an exception.
+        :param kwargs:
+        :return: concurrent.futures.Future
+        """
         # submit a task to the pool, when a complete data set is retrieved, the future will resolve
         # if the timeout (default 60s) per chunk is reached, the queue.Empty exception will be raised in the future
         future = self.unite_pool.submit(receiver.unite,

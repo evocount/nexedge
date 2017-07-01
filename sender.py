@@ -32,7 +32,6 @@ def send_command(
     :param confirmation_timeout:
     :return: 
     """
-
     for command in commandlist:
         success = False
         command_send = False
