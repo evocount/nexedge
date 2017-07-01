@@ -45,14 +45,15 @@ with Radio(serialcon=ser,
            max_chunk_size=4096, compression=True) as radio:
 
     futures = []
-    # futures.extend([radio.send(test_json, b'00011') for i in range(0, 2)])
+    futures.extend([radio.send(test_json, b'00011') for i in range(0, 10)])
 
-    futures.extend([radio.get(receive_timeout=None) for i in range(0, 2)])
+    # futures.extend([radio.get(receive_timeout=None) for i in range(0, 10)])
 
     for fu in as_completed(futures):
         try:
             response = fu.result()
-            print(response)
+            print("pass")
+            #print(response)
         except ReceiveTimeout:
             print("receiver timeout")
         except VerificationError:

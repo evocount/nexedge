@@ -205,6 +205,7 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
         # this is the first chunk
         if chunk[:4] == b'json':
             startchunk = True
+            print("start")
             # clear the list in chunks in case a previous transmission was not complete!
             chunks = []
             # strip the identifier
@@ -213,6 +214,7 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
         # this is the last chunk of a full transmission because startchunk is set
         if startchunk and chunk[-4:] == b'json':
             stopchunk = True
+            print("end")
             # strip the identifier
             chunk = chunk[:-4]
             # # strip the checksum and convert from hex to int
