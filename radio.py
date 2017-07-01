@@ -39,6 +39,7 @@ class Radio(object):
                  compression: bool = True):
         self.serial_connection = serialcon
         self.max_chunk_size = max_chunk_size
+        self.compression = compression
 
         # Setting up th reader thread
         self.protocol = serial.threaded.ReaderThread(self.serial_connection, receiver.NexedgePacketizer)
@@ -86,7 +87,10 @@ class Radio(object):
         data_bytes = data_str.encode()
 
         # compression with zlib
-        data_compressed = zlib.compress(data_bytes)
+        if self.compression:
+            data_compressed = zlib.compress(data_bytes)
+        else:
+            data_compressed = data_bytes
 
         chunks = [c for c in
                   split_to_chunks(data=data_compressed, chunksize=(self.max_chunk_size - 8))]  # make room for flag
@@ -109,6 +113,7 @@ class Radio(object):
         # if the timeout (default 60s) per chunk is reached, the queue.Empty exception will be raised in the future
         future = self.unite_pool.submit(receiver.unite,
                                         self.answer_queue,
+                                        self.compression,
                                         **kwargs)
 
         return future

@@ -171,7 +171,7 @@ def unite_chunks(chunks: [bytes, ]) -> bytes:
     return data
 
 
-def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
+def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> dict:
     startchunk = False
     stopchunk = False
     chunks = []
@@ -202,7 +202,10 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
     data_compressed = unite_chunks(chunks)
 
     # decompression
-    data_bytes = zlib.decompress(data_compressed)
+    if compression:
+        data_bytes = zlib.decompress(data_compressed)
+    else:
+        data_bytes = data_compressed
 
     data_str = data_bytes.decode()
     data = json.loads(data_str)
