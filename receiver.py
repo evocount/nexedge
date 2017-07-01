@@ -11,14 +11,7 @@ import zlib
 import json
 import queue
 from queue import Queue
-
-
-class ReceiveTimeout(Exception):
-    pass
-
-
-class VerificationError(Exception):
-    pass
+from custom_exceptions import *
 
 
 class ChannelStatus(object):

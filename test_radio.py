@@ -7,10 +7,12 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
 from radio import Radio
+import receiver
+import sender
+from custom_exceptions import *
 import time
 import serial
 import json
-import queue
 from concurrent.futures import as_completed
 
 testnachricht = "Hallo Welt hier spricht EvoCount"
@@ -57,5 +59,7 @@ with Radio(serialcon=ser,
         try:
             response = fu.result()
             print(response)
-        except queue.Empty:
-            print("unifying timeout")
+        except ReceiveTimeout:
+            print("receiver timeout")
+        except VerificationError:
+            print("verification error")

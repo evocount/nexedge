@@ -9,20 +9,8 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 import serial.threaded
 from queue import Queue
 import receiver
-import threading
 import time
-
-
-class ChannelTimeout(Exception):
-    pass
-
-
-class ConfirmationTimeout(Exception):
-    pass
-
-
-class SendMaxRetries(Exception):
-    pass
+from custom_exceptions import *
 
 
 def send_command(

@@ -7,13 +7,14 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
 import json
+import zlib
+import concurrent.futures
 import serial
 import serial.threaded
-import zlib
 import receiver
 from sender import send_command
 from pcip_commands import *
-import concurrent.futures
+from custom_exceptions import *
 
 
 def split_to_chunks(data: bytes, chunksize: int):
