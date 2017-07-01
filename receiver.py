@@ -9,7 +9,16 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 import serial.threaded
 import zlib
 import json
+import queue
 from queue import Queue
+
+
+class ReceiveTimeout(Exception):
+    pass
+
+
+class VerificationError(Exception):
+    pass
 
 
 class ChannelStatus(object):
@@ -179,8 +188,11 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
     # get all chunks from the queue
     while not stopchunk:
         # the timeout is set per chunk
-        #  if the timeout is reached the queue.Empty exception is raised
-        chunk = answer_queue.get(timeout=receive_timeout)
+        #  if the timeout is reached the queue.Empty exception is raised and catched
+        try:
+            chunk = answer_queue.get(timeout=receive_timeout)
+        except queue.Empty:
+            raise ReceiveTimeout
 
         # this is the first chunk
         if chunk[:4] == b'json':
@@ -195,6 +207,8 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
             stopchunk = True
             # strip the identifier
             chunk = chunk[:-4]
+            # strip the checksum and convert from hex to int
+            cs_received_int = int.from_bytes(chunk[:-4], "big")
 
         if startchunk:
             chunks.append(chunk)
@@ -206,6 +220,13 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
         data_bytes = zlib.decompress(data_compressed)
     else:
         data_bytes = data_compressed
+
+    # data integrity check
+    data_cs_int = zlib.crc32(data_bytes)
+
+    # the foobar is used because of some int signing issue, see https://docs.python.org/3/library/zlib.html#zlib.crc32
+    if (data_cs_int & 0xffffffff) != (cs_received_int & 0xffffffff):
+        raise VerificationError
 
     data_str = data_bytes.decode()
     data = json.loads(data_str)
