@@ -215,8 +215,9 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
             stopchunk = True
             # strip the identifier
             chunk = chunk[:-4]
-            # strip the checksum and convert from hex to int
-            cs_received_int = int.from_bytes(chunk[:-4], "big")
+            # # strip the checksum and convert from hex to int
+            # cs_received_int = int.from_bytes(chunk[-4:], "big")
+            # chunk = chunk[:-4]
 
         if startchunk:
             chunks.append(chunk)
@@ -229,12 +230,12 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
     else:
         data_bytes = data_compressed
 
-    # data integrity check
-    data_cs_int = zlib.crc32(data_bytes)
+    # # data integrity check
+    # data_cs_int = zlib.crc32(data_bytes)
 
-    # the foobar is used because of some int signing issue, see https://docs.python.org/3/library/zlib.html#zlib.crc32
-    if (data_cs_int & 0xffffffff) != (cs_received_int & 0xffffffff):
-        raise VerificationError
+    # # the foobar is used because of some int signing issue, see https://docs.python.org/3/library/zlib.html#zlib.crc32
+    # if (data_cs_int & 0xffffffff) != (cs_received_int & 0xffffffff):
+    #     raise VerificationError
 
     data_str = data_bytes.decode()
     data = json.loads(data_str)

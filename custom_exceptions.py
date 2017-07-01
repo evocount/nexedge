@@ -10,14 +10,18 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 
 
 # receiver Exceptions
-class ReceiveTimeout(Exception):
+class ReceiverException(Exception):
+    pass
+
+
+class ReceiveTimeout(ReceiverException):
     """
     The unifier thread received to messages in the answer_queue.
     """
     pass
 
 
-class VerificationError(Exception):
+class VerificationError(ReceiverException):
     """
     The received checksum does not match the generated checksum of the received data.
     """
@@ -25,7 +29,11 @@ class VerificationError(Exception):
 
 
 # sender exceptions
-class ChannelTimeout(Exception):
+class SenderException(Exception):
+    pass
+
+
+class ChannelTimeout(SenderException):
     """
     The channel timed out during send, this means, that the channel was not free for a set duration that exceeded
     the limit.
@@ -33,14 +41,14 @@ class ChannelTimeout(Exception):
     pass
 
 
-class ConfirmationTimeout(Exception):
+class ConfirmationTimeout(SenderException):
     """
     The confirmation message for a command was not received in a given frame of time.
     """
     pass
 
 
-class SendMaxRetries(Exception):
+class SendMaxRetries(SenderException):
     """
     The number of failed send attempts exceeded the maximum number.
     """

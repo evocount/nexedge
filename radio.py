@@ -124,11 +124,11 @@ class Radio(object):
         data_str = json.dumps(data, separators=(',', ':'))  # compact
         data_bytes = data_str.encode()
 
-        # checksum generation
-        data_cs_int = zlib.crc32(data_bytes)
-
-        # checksum encoding to 4 bytes
-        data_cs_bytes = data_cs_int.to_bytes(4, "big")
+        # # checksum generation
+        # data_cs_int = zlib.crc32(data_bytes)
+        #
+        # # checksum encoding to 4 bytes
+        # data_cs_bytes = data_cs_int.to_bytes(4, "big")
 
         # compression with zlib
         if self.compression:
@@ -137,11 +137,13 @@ class Radio(object):
             data_compressed = data_bytes
 
         chunks = [c for c in
-                  split_to_chunks(data=data_compressed, chunksize=(self.max_chunk_size - 8 - 4))]  # make room for flag
+                  # split_to_chunks(data=data_compressed, chunksize=(self.max_chunk_size - 8 - 4))]  # make room for flag
+                  split_to_chunks(data=data_compressed, chunksize=(self.max_chunk_size - 8))]  # make room for flag
 
         # first chunk starts with b'json' and last chunk ends with b'json'
         chunks[0] = b'json' + chunks[0]
-        chunks[-1] = chunks[-1] + data_cs_bytes + b'json'
+        # chunks[-1] = chunks[-1] + data_cs_bytes + b'json'
+        chunks[-1] = chunks[-1] + b'json'
 
         future = self.send_pool.submit(send_command,
                                        [longMessage2Unit(unitID=target, message=c) for c in chunks],
