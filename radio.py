@@ -36,7 +36,8 @@ class Radio(object):
 
     def __init__(self,
                  serialcon: serial.Serial,
-                 max_chunk_size: int):
+                 max_chunk_size: int,
+                 compression: bool = True):
         self.serial_connection = serialcon
         self.max_chunk_size = max_chunk_size
 
