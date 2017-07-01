@@ -7,9 +7,13 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
 import serial.threaded
-import threading
+import queue
 import json
 from queue import Queue
+
+
+class ReceiveTimeout(Exception):
+    pass
 
 
 class ChannelStatus(object):
@@ -180,7 +184,10 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
     while not stopchunk:
         # the timeout is set per chunk
         #  if the timeout is reached the queue.Empty exception is raised
-        chunk = answer_queue.get(timeout=receive_timeout)
+        try:
+            chunk = answer_queue.get(timeout=receive_timeout)
+        except queue.Empty:
+            raise ReceiveTimeout
 
         # this is the first chunk
         if chunk[:4] == b'json':
