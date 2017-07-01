@@ -47,7 +47,7 @@ with Radio(serialcon=ser,
     futures = []
     # futures.extend([radio.send(test_json, b'00011') for i in range(0, 2)])
 
-    futures.extend([radio.get(receive_timeout=10) for i in range(0, 2)])
+    futures.extend([radio.get(receive_timeout=None) for i in range(0, 2)])
 
     for fu in as_completed(futures):
         try:
