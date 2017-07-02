@@ -11,6 +11,7 @@ import zlib
 from zlib import compress, decompress
 # from lzma import compress, decompress
 import base64
+import time
 import json
 import queue
 from queue import Queue
@@ -23,24 +24,40 @@ class ChannelStatus(object):
     """
     channel_free = True
     radio_status = "unknown"
+    time_unfree = time.time()
+
+    def __init__(self, free_threshold: int = 5):
+        """
+        Initialize Object.
+        Threshold sets the time in seconds in which the channel has to be clear before it is considered really free.
+        :param free_threshold: int
+        """
+        self.free_threshold = free_threshold
 
     def is_free(self):
         """
-        True if channel is free (led off)
+        True if channel is free (led off).
+        Sets the timer.
         :return: 
         """
         return self.channel_free
 
+    def is_free_timed(self):
+        return True if (self.channel_free and (time.time() - self.free_threshold) > self.time_unfree) else False
+
     def set_red(self):
         self.channel_free = False
+        self.time_unfree = time.time()
         self.radio_status = "sending"
 
     def set_green(self):
         self.channel_free = False
+        self.time_unfree = time.time()
         self.radio_status = "receiving"
 
     def set_orange(self):
         self.channel_free = False
+        self.time_unfree = time.time()
         self.radio_status = "idle"
 
     def set_free(self):

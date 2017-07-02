@@ -51,7 +51,7 @@ def send_command(
 
         while not success:
             # optimal start condition -> send command
-            if not command_send and channel_status.is_free():
+            if not command_send and channel_status.is_free_timed():
                 protocol.write(command)
                 command_send = True
                 send_tries += 1
