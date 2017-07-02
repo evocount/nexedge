@@ -10,6 +10,7 @@ import json
 import zlib
 from zlib import compress, decompress
 # from lzma import compress, decompress
+import base64
 import concurrent.futures
 import serial
 import serial.threaded
@@ -138,9 +139,11 @@ class Radio(object):
         else:
             data_compressed = data_bytes
 
+        data_encoded = base64.b64encode(data_compressed)
+
         chunks = [c for c in
                   # split_to_chunks(data=data_compressed, chunksize=(self.max_chunk_size - 8 - 4))]  # make room for flag
-                  split_to_chunks(data=data_compressed, chunksize=(self.max_chunk_size - 8))]  # make room for flag
+                  split_to_chunks(data=data_encoded, chunksize=(self.max_chunk_size - 8))]  # make room for flag
 
         # first chunk starts with b'json' and last chunk ends with b'json'
         chunks[0] = b'json' + chunks[0]

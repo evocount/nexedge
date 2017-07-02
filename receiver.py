@@ -10,6 +10,7 @@ import serial.threaded
 import zlib
 from zlib import compress, decompress
 # from lzma import compress, decompress
+import base64
 import json
 import queue
 from queue import Queue
@@ -226,7 +227,9 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
         if startchunk:
             chunks.append(chunk)
 
-    data_compressed = unite_chunks(chunks)
+    data_encoded = unite_chunks(chunks)
+
+    data_compressed = base64.b64decode(data_encoded)
 
     # decompression
     if compression:
