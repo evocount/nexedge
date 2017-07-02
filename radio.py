@@ -8,6 +8,8 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 
 import json
 import zlib
+from zlib import compress, decompress
+# from lzma import compress, decompress
 import concurrent.futures
 import serial
 import serial.threaded
@@ -130,9 +132,9 @@ class Radio(object):
         # # checksum encoding to 4 bytes
         # data_cs_bytes = data_cs_int.to_bytes(4, "big")
 
-        # compression with zlib
+        # compression with zlib or lzma
         if self.compression:
-            data_compressed = zlib.compress(data_bytes)
+            data_compressed = compress(data_bytes)
         else:
             data_compressed = data_bytes
 

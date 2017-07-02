@@ -8,6 +8,8 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 
 import serial.threaded
 import zlib
+from zlib import compress, decompress
+# from lzma import compress, decompress
 import json
 import queue
 from queue import Queue
@@ -228,7 +230,7 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
 
     # decompression
     if compression:
-        data_bytes = zlib.decompress(data_compressed)
+        data_bytes = decompress(data_compressed)
     else:
         data_bytes = data_compressed
 
