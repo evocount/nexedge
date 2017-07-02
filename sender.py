@@ -21,7 +21,10 @@ def send_command(
         transmission_queue: Queue,
         max_retries: int = 2,
         channel_timeout: int = 10,
-        confirmation_timeout: int = 60) -> bool:
+        confirmation_timeout: int = 60,
+        occupied_snooze: int = 1,
+        confirmation_snooze: int = 1,
+        retry_snooze: int = 20) -> bool:
     """
     Sends a List of radio commands via serial. Returns True if success, else an exception is raised.
     :param commandlist:
@@ -31,12 +34,14 @@ def send_command(
     :param max_retries:
     :param channel_timeout:
     :param confirmation_timeout:
+    :param occupied_snooze:
+    :param confirmation_snooze:
+    :param retry_snooze:
     :return: 
     """
     for command in commandlist:
         success = False
         command_send = False
-        snooze = 0.1
 
         # number of tries for sending
         send_tries = -1
@@ -61,8 +66,8 @@ def send_command(
                     raise ChannelTimeout
                 # no timeout -> go to sleep
                 else:
-                    # print("waiting for channel to become free")
-                    time.sleep(snooze)
+                    time.sleep(occupied_snooze)
+                    print("channel occupied, slept for {}s".format(occupied_snooze))
                     continue
 
             # at this point command_send is always True, because the above catches all cases for False
@@ -75,7 +80,8 @@ def send_command(
                     raise ConfirmationTimeout
                 # no timeout -> got to sleep
                 else:
-                    time.sleep(snooze)
+                    time.sleep(confirmation_snooze)
+                    print("no confirmation yet, slept for {}s".format(confirmation_snooze))
                     continue
             # confirmation error -> check for max_retries
             elif not transmission_queue.get():
@@ -87,11 +93,12 @@ def send_command(
                 # -> try again in the next loop
                 else:
                     command_send = False
-                    # wait for a random fraction of 10 seconds
-                    time.sleep(randint(1, 100)/10)
+                    # wait for a random fraction of 20 seconds
+                    snooze = randint(1, retry_snooze*10)/10
+                    time.sleep(snooze)
                     # reset the channel timeout
                     time_channel = time.time()
-                    print("retry")
+                    print("retry after {}s".format(snooze))
                     continue
             # confirmation success -> success
             else:

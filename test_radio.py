@@ -11,6 +11,7 @@ import receiver
 import sender
 from custom_exceptions import *
 import time
+from random import randint
 import serial
 import json
 from concurrent.futures import as_completed
@@ -45,18 +46,18 @@ with Radio(serialcon=ser,
            max_chunk_size=4096, compression=True) as radio:
 
     futures = []
-    futures.extend([radio.send(test_json, b'00011') for i in range(0, 10)])
 
-    # futures.extend([radio.get(receive_timeout=None) for i in range(0, 10)])
+    # futures.extend([radio.get() for i in range(0, 4)])
+
+    time.sleep(randint(0, 100)/10)
+
+    futures.extend([radio.send(test_json, b'00011') for i in range(0, 3)])
 
     for fu in as_completed(futures):
         try:
             response = fu.result()
-            print("pass")
-            #print(response)
-        except ReceiveTimeout:
-            print("receiver timeout")
-        except VerificationError:
-            print("verification error")
-        except SenderException:
-            print("send error")
+            print(response)
+        except ReceiverException as e:
+            print("receive error: {}".format(repr(e)))
+        except SenderException as e:
+            print("send error: {}".format(repr(e)))
