@@ -20,7 +20,7 @@ def send_command(
         channel_status: receiver.ChannelStatus,
         transmission_queue: Queue,
         max_retries: int = 2,
-        channel_timeout: int = 10,
+        channel_timeout: int = 30,
         confirmation_timeout: int = 60,
         occupied_snooze: int = 1,
         confirmation_snooze: int = 1,

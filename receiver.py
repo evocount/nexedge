@@ -26,7 +26,7 @@ class ChannelStatus(object):
     radio_status = "unknown"
     time_unfree = time.time()
 
-    def __init__(self, free_threshold: int = 5):
+    def __init__(self, free_threshold: int = 2):
         """
         Initialize Object.
         Threshold sets the time in seconds in which the channel has to be clear before it is considered really free.
