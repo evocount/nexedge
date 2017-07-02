@@ -10,6 +10,7 @@ import serial.threaded
 from queue import Queue
 import receiver
 import time
+from random import randint
 from custom_exceptions import *
 
 
@@ -86,6 +87,8 @@ def send_command(
                 # -> try again in the next loop
                 else:
                     command_send = False
+                    # wait for a random fraction of 10 seconds
+                    time.sleep(randint(1, 100)/10)
                     # reset the channel timeout
                     time_channel = time.time()
                     print("retry")
