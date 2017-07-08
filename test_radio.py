@@ -40,9 +40,7 @@ ser.parity = eval(config["serial"]["parity"])  # we have to evaluate the code in
 ser.stopbits = eval(config["serial"]["stopbits"])
 ser.bytesize = eval(config["serial"]["bytesize"])
 
-# radio = Radio(serialcon=ser, max_chunk_size=4096)
-
-with Radio(serialcon=ser,
+with Radio(serial_connection=ser,
            max_chunk_size=4096, compression=True) as radio:
 
     futures = []

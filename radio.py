@@ -45,16 +45,25 @@ class Radio(object):
     """
 
     def __init__(self,
-                 serialcon: serial.Serial,
-                 max_chunk_size: int,
+                 serial_connection: serial.Serial or None = None,
+                 max_chunk_size: int = 4096,
                  compression: bool = True):
         """
         This method starts all threads and maps the queues.
-        :param serialcon: serial.Serial
+        If serial_connection == None (default) the default configuration for raspberry pi will be used (/dev/ttyAMA0).
+        :param serial_connection: serial.Serial or None
         :param max_chunk_size: int
         :param compression: bool = True
         """
-        self.serial_connection = serialcon
+
+        if serial_connection is None:
+            self.serial_connection = serial.Serial("/dev/ttyAMA0")
+            self.serial_connection = 9600
+            self.serial_connection = serial.PARITY_NONE
+            self.serial_connection = serial.STOPBITS_TWO
+            self.serial_connection = serial.EIGHTBITS
+        else:
+            self.serial_connection = serial_connection
         self.max_chunk_size = max_chunk_size
         self.compression = compression
 
