@@ -11,7 +11,7 @@ from queue import Queue
 import receiver
 import time
 from random import randint
-from custom_exceptions import *
+from exceptions import *
 
 
 def send_command(

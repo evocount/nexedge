@@ -9,7 +9,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 from radio import Radio
 import receiver
 import sender
-from custom_exceptions import *
+from exceptions import *
 import time
 from random import randint
 import serial

@@ -17,7 +17,7 @@ import serial.threaded
 import receiver
 from sender import send_command
 from pcip_commands import *
-from custom_exceptions import *
+from exceptions import *
 
 
 def split_to_chunks(data: bytes, chunksize: int):
