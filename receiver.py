@@ -37,32 +37,40 @@ class ChannelStatus(object):
     def is_free(self):
         """
         True if channel is free (led off).
-        Sets the timer.
-        :return: 
+        :return: bool
         """
         return self.channel_free
 
     def is_free_timed(self):
-        return True if (self.channel_free and (time.time() - self.free_threshold) > self.time_unfree) else False
-
-    def set_red(self):
-        self.channel_free = False
-        self.time_unfree = time.time()
-        self.radio_status = "sending"
-
-    def set_green(self):
-        self.channel_free = False
-        self.time_unfree = time.time()
-        self.radio_status = "receiving"
-
-    def set_orange(self):
-        self.channel_free = False
-        self.time_unfree = time.time()
-        self.radio_status = "idle"
+        """
+        True if channel is free (led off) and was free for the last self.free_threshold seconds (default = 2s).
+        :return: bool
+        """
+        return self.channel_free and time.time() - self.free_threshold > self.time_unfree
 
     def set_free(self):
         self.channel_free = True
         self.radio_status = "off"
+
+    def set_unfree(self, status):
+        """
+        Sets self.channel_free to False and the radio status to a human readable string, the time when the channel goes
+        unfree is stored.
+        :param status: str
+        :return:
+        """
+        self.channel_free = False
+        self.time_unfree = time.time()
+        self.radio_status = status
+
+    def set_red(self):
+        self.set_unfree("sending")
+
+    def set_green(self):
+        self.set_unfree("receiving")
+
+    def set_orange(self):
+        self.set_unfree("idle")
 
 
 class NexedgePacketizer(serial.threaded.FramedPacket):
