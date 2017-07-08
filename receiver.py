@@ -7,13 +7,15 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
 import serial.threaded
-import queue
+import zlib
+from zlib import compress, decompress
+# from lzma import compress, decompress
+import base64
+import time
 import json
+import queue
 from queue import Queue
-
-
-class ReceiveTimeout(Exception):
-    pass
+from custom_exceptions import *
 
 
 class ChannelStatus(object):
@@ -22,29 +24,53 @@ class ChannelStatus(object):
     """
     channel_free = True
     radio_status = "unknown"
+    time_unfree = time.time()
+
+    def __init__(self, free_threshold: int = 2):
+        """
+        Initialize Object.
+        Threshold sets the time in seconds in which the channel has to be clear before it is considered really free.
+        :param free_threshold: int
+        """
+        self.free_threshold = free_threshold
 
     def is_free(self):
         """
-        True if channel is free (led off)
-        :return: 
+        True if channel is free (led off).
+        :return: bool
         """
         return self.channel_free
 
-    def set_red(self):
-        self.channel_free = False
-        self.radio_status = "sending"
-
-    def set_green(self):
-        self.channel_free = False
-        self.radio_status = "receiving"
-
-    def set_orange(self):
-        self.channel_free = False
-        self.radio_status = "idle"
+    def is_free_timed(self):
+        """
+        True if channel is free (led off) and was free for the last self.free_threshold seconds (default = 2s).
+        :return: bool
+        """
+        return self.channel_free and time.time() - self.free_threshold > self.time_unfree
 
     def set_free(self):
         self.channel_free = True
         self.radio_status = "off"
+
+    def set_unfree(self, status):
+        """
+        Sets self.channel_free to False and the radio status to a human readable string, the time when the channel goes
+        unfree is stored.
+        :param status: str
+        :return:
+        """
+        self.channel_free = False
+        self.time_unfree = time.time()
+        self.radio_status = status
+
+    def set_red(self):
+        self.set_unfree("sending")
+
+    def set_green(self):
+        self.set_unfree("receiving")
+
+    def set_orange(self):
+        self.set_unfree("idle")
 
 
 class NexedgePacketizer(serial.threaded.FramedPacket):
@@ -168,6 +194,11 @@ class NexedgePacketizer(serial.threaded.FramedPacket):
 
 
 def unite_chunks(chunks: [bytes, ]) -> bytes:
+    """
+    Concats a list of chunks (consiting of bytes)
+    :param chunks: [bytes, ]
+    :return: bytes
+    """
     data = b''
     for c in chunks:
         data = data + c
@@ -175,7 +206,17 @@ def unite_chunks(chunks: [bytes, ]) -> bytes:
     return data
 
 
-def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
+def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> dict:
+    """
+    To be used in a ThreadPool.
+    Takes the answer_queue and pops items until the starting chunk is found (starts with b'json'), until the stopping
+    chunk is found (ends with b'json'), all chunks are appended to a list.
+    If compression is enabled on class level, the joined chunks are decompressed and the checksum is verified.
+    :param answer_queue: Queue
+    :param compression: bool
+    :param receive_timeout: int = 60
+    :return: dict
+    """
     startchunk = False
     stopchunk = False
     chunks = []
@@ -183,7 +224,7 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
     # get all chunks from the queue
     while not stopchunk:
         # the timeout is set per chunk
-        #  if the timeout is reached the queue.Empty exception is raised
+        #  if the timeout is reached the queue.Empty exception is raised and catched
         try:
             chunk = answer_queue.get(timeout=receive_timeout)
         except queue.Empty:
@@ -192,6 +233,7 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
         # this is the first chunk
         if chunk[:4] == b'json':
             startchunk = True
+            print("start")
             # clear the list in chunks in case a previous transmission was not complete!
             chunks = []
             # strip the identifier
@@ -200,13 +242,33 @@ def unite(answer_queue: Queue, receive_timeout: int = 60) -> dict:
         # this is the last chunk of a full transmission because startchunk is set
         if startchunk and chunk[-4:] == b'json':
             stopchunk = True
+            print("end")
             # strip the identifier
             chunk = chunk[:-4]
+            # # strip the checksum and convert from hex to int
+            # cs_received_int = int.from_bytes(chunk[-4:], "big")
+            # chunk = chunk[:-4]
 
         if startchunk:
             chunks.append(chunk)
 
-    data_bytes = unite_chunks(chunks)
+    data_encoded = unite_chunks(chunks)
+
+    data_compressed = base64.b64decode(data_encoded)
+
+    # decompression
+    if compression:
+        data_bytes = decompress(data_compressed)
+    else:
+        data_bytes = data_compressed
+
+    # # data integrity check
+    # data_cs_int = zlib.crc32(data_bytes)
+
+    # # the foobar is used because of some int signing issue, see https://docs.python.org/3/library/zlib.html#zlib.crc32
+    # if (data_cs_int & 0xffffffff) != (cs_received_int & 0xffffffff):
+    #     raise VerificationError
+
     data_str = data_bytes.decode()
     data = json.loads(data_str)
 
