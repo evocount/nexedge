@@ -1,3 +1,6 @@
+# numpy arrays
+*.npy
+
 .idea/
 
 radio_settings.json
