@@ -14,10 +14,10 @@ import base64
 import concurrent.futures
 import serial
 import serial.threaded
-import receiver
-from sender import send_command
-from pcip_commands import *
-from exceptions import *
+import .receiver
+from .sender import send_command
+from .pcip_commands import *
+from .exceptions import *
 
 
 def split_to_chunks(data: bytes, chunksize: int):

@@ -15,7 +15,7 @@ import time
 import json
 import queue
 from queue import Queue
-from exceptions import *
+from .exceptions import *
 
 
 class ChannelStatus(object):

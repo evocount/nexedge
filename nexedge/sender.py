@@ -8,7 +8,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 
 import serial.threaded
 from queue import Queue
-import receiver
+import .receiver
 import time
 from random import randint
 from exceptions import *
