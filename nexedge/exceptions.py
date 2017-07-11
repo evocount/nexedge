@@ -6,15 +6,16 @@ Proprietary and confidential
 Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
-# this file defines all Exceptions used
+import requests
 
+# this file defines all Exceptions used
 
 # receiver Exceptions
 class ReceiverException(Exception):
     pass
 
 
-class ReceiveTimeout(ReceiverException):
+class ReceiveTimeout(ReceiverException, requests.exceptions.Timeout):
     """
     The unifier thread received to messages in the answer_queue.
     """
@@ -33,7 +34,7 @@ class SenderException(Exception):
     pass
 
 
-class ChannelTimeout(SenderException):
+class ChannelTimeout(SenderException, requests.exceptions.Timeout):
     """
     The channel timed out during send, this means, that the channel was not free for a set duration that exceeded
     the limit.
@@ -41,7 +42,7 @@ class ChannelTimeout(SenderException):
     pass
 
 
-class ConfirmationTimeout(SenderException):
+class ConfirmationTimeout(SenderException, requests.exceptions.Timeout):
     """
     The confirmation message for a command was not received in a given frame of time.
     """

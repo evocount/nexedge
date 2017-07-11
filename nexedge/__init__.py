@@ -28,6 +28,23 @@ from .sender import send_command
 from .pcip_commands import *
 from .exceptions import *
 
+# the requests library returns a future with the method raise for status which raises the HTTP error code
+# we do not need such fuzz here, future.result() will raise if there was a problem, but the method has to be implemented
+# code is commented out because it is not clear if needed
+def raise_for_status(future):
+    """
+    Mimic futures returned by requests.
+    Raise the exception if future.result() ends in one.
+    """
+
+    if future.exception() is not None:
+        raise future.exception()
+    else:
+        return None
+
+# patch it to concurrent.futures.Future in runtime
+setattr(concurrent.futures.Future, "raise_for_status", classmethod(raise_for_status))
+
 
 def split_to_chunks(data: bytes, chunksize: int):
     """"
@@ -193,3 +210,4 @@ class Radio(object):
                                         **kwargs)
 
         return future
+
