@@ -1,5 +1,5 @@
 # EvoCount nexedge radio communication
-This enables the Polling Device Manager to communicate via a radio link using Kenwood Nexedge devices.
+This module enables the Polling Device Manager to communicate via a radio link using Kenwood Nexedge devices.
 
 ## Prerequisites
 The following things are needed.
@@ -9,16 +9,16 @@ The following things are needed.
 
 ## Installation
 * git clone `git@gitlab.com:evocount/nexedge.git`
-* `cp radio_settings.json.sample radio_settings.json` and modify accordingly to your setup.
-
-E.g. port is /dev/ttyAMA0 on the raspberry pi and usually /dev/ttyUSB0 on linux machines.
+* cd nexedge && pip install .
+* maybe use sudo
 
 ## Usage
 See `test_radio.py` for a short example.
-* `from radio import Radio`
-* open a serial connection `ser = serial.Serial(...)`
-* get an instance of the radio object `radio = Radio(serialcon=ser, max_chunk_size=4096)`
-* the second parameter specifies the maximum message size (in bytes) for a *long distance message (LDM)*
+* `from nexedge import Radio`
+* by default the connections setting for a RPi will be used (/dev/ttyAMA0)
+* get an instance of the radio object `radio = Radio()`
+* if you need a different port, just open a serial connection `ser = serial.Serial(...)` and pass it to `Radio.init()`
+* the `max_chunk_size` parameter specifies the maximum message size (in bytes) for a *long distance message (LDM)*
 * send dictionaries `radio.send(data=data, target=b'00011')` of json data
 * receive dictionaries with `data = radio.get()`
 
@@ -41,6 +41,3 @@ The Thread `send_worker` loops over send-commands in the `send_queue` and sends 
 ### Receiving and sending dictionaries
 #### `Radio.send(...)` method
 Every json-dictionary has a string representations. The string representations is encoded and split into parts with a `max_chunk_size - 8` (i.e. 4096 - 8 = 4088 bytes). The first chunk is placed behind a identifier string `b'json'`, the same is placed after the last chunk (hence the maximum chunk size - 8, because `len(b'json') = 4`). All chunks are put into the send_queue in order.
-
-#### `Radio.get()` method
-The instance of `Radio()` starts a `unite_worker` which task is to look for the start identifier `b'json'` in a message and concat all following messages until the stop identifier `b'json'` is found. The resulting string is now loaded into a json-dictionary and put into the `data_queue`. The `get()` method calls `data_queue.get()` and returns the dict if there is one, else `None` is returned.
