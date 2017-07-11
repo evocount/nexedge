@@ -218,7 +218,7 @@ def unite_chunks(chunks: [bytes, ]) -> bytes:
     return data
 
 
-def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> dict:
+def unite(answer_queue: Queue, compression: bool, timeout: int = 60) -> dict:
     """
     To be used in a ThreadPool.
     Takes the answer_queue and pops items until the starting chunk is found (starts with b'json'), until the stopping
@@ -226,7 +226,7 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
     If compression is enabled on class level, the joined chunks are decompressed and the checksum is verified.
     :param answer_queue: Queue
     :param compression: bool
-    :param receive_timeout: int = 60
+    :param timeout: int = 60
     :return: dict
     """
     startchunk = False
@@ -238,7 +238,7 @@ def unite(answer_queue: Queue, compression: bool, receive_timeout: int = 60) -> 
         # the timeout is set per chunk
         #  if the timeout is reached the queue.Empty exception is raised and catched
         try:
-            chunk = answer_queue.get(timeout=receive_timeout)
+            chunk = answer_queue.get(timeout=timeout)
         except queue.Empty:
             raise ReceiveTimeout
 
