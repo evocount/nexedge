@@ -6,15 +6,27 @@ Proprietary and confidential
 Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
+# pyserial
 import serial.threaded
+
+# compression
 import zlib
 from zlib import compress, decompress
 # from lzma import compress, decompress
 import base64
+
+# timer
 import time
+
+# data model
 import json
+
+# queues
 import queue
 from queue import Queue
+
+# local stuff
+from . import exceptions
 from .exceptions import *
 
 

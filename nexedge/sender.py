@@ -6,12 +6,19 @@ Proprietary and confidential
 Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
+# pyserial
 import serial.threaded
+
+# queues
 from queue import Queue
-import .receiver
+
+# local stuff
+from . import receiver, exceptions
+from .exceptions import *
+
+# timer
 import time
 from random import randint
-from exceptions import *
 
 
 def send_command(

@@ -6,15 +6,24 @@ Proprietary and confidential
 Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
+# data format
 import json
+
+# compression
 import zlib
 from zlib import compress, decompress
 # from lzma import compress, decompress
 import base64
+
+# future
 import concurrent.futures
+
+# pyserial
 import serial
 import serial.threaded
-import .receiver
+
+# local stuff
+from . import *
 from .sender import send_command
 from .pcip_commands import *
 from .exceptions import *
