@@ -15,6 +15,7 @@ setup(name='nexedge',
       packages=['nexedge'],
       install_requires=[
           'pyserial',
+          'requests'
       ],
 
       zip_safe=False)
