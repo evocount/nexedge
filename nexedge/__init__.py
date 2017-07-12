@@ -43,7 +43,7 @@ def raise_for_status(future):
         return None
 
 # patch it to concurrent.futures.Future in runtime
-setattr(concurrent.futures.Future, "raise_for_status", classmethod(raise_for_status))
+# setattr(concurrent.futures.Future, "raise_for_status", classmethod(raise_for_status))
 
 
 def split_to_chunks(data: bytes, chunksize: int):
