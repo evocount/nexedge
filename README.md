@@ -6,6 +6,7 @@ The following things are needed.
 * git
 * Python >= 3.4 (as required by pySerial)
 * pySerial >= 3.2.1
+* requests
 
 ## Installation
 * git clone `git@gitlab.com:evocount/nexedge.git`
