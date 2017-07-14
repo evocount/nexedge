@@ -83,7 +83,8 @@ class Radio(object):
         """
 
         if serial_connection is None:
-            self.serial_connection = serial.Serial("/dev/ttyAMA0")
+            self.serial_connection = serial.Serial("/dev/ttyUSB0") # temporal fix because max3232 adaptors are not ready yet
+            # self.serial_connection = serial.Serial("/dev/ttyAMA0")
             self.serial_connection = 9600
             self.serial_connection = serial.PARITY_NONE
             self.serial_connection = serial.STOPBITS_TWO
