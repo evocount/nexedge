@@ -7,6 +7,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
 from nexedge import Radio
+from nexedge.exceptions import *
 #from radio import Radio
 #import receiver
 #import sender
@@ -50,7 +51,7 @@ with Radio(serial_connection=ser,
 
     time.sleep(randint(0, 100)/10)
 
-    futures.extend([radio.send(test_json, b'00011') for i in range(0, 3)])
+    futures.extend([radio.send(test_json, b'00002') for i in range(0, 1)])
 
     for fu in as_completed(futures):
         try:
