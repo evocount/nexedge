@@ -23,10 +23,11 @@ import serial
 import serial.threaded
 
 # local stuff
-from . import *
+from . import receiver, sender, pcip_commands, exceptions
 from .sender import send_command
 from .pcip_commands import *
 from .exceptions import *
+
 
 # the requests library returns a future with the method raise for status which raises the HTTP error code
 # we do not need such fuzz here, future.result() will raise if there was a problem, but the method has to be implemented
@@ -71,28 +72,27 @@ class Radio(object):
     """
 
     def __init__(self,
-                 serial_connection: serial.Serial or None = None,
+                 serial_port: str = "/dev/ttyUSB0",
                  max_chunk_size: int = 4096,
                  compression: bool = True):
         """
         This method starts all threads and maps the queues.
-        If serial_connection == None (default) the default configuration for raspberry pi will be used (/dev/ttyAMA0).
-        :param serial_connection: serial.Serial or None
+        If no serial port is given, the default configuration for raspberry pi will be used (/dev/ttyAMA0).
+        :param serial_port: str
         :param max_chunk_size: int
         :param compression: bool = True
         """
 
-        if serial_connection is None:
-            self.serial_connection = serial.Serial("/dev/ttyUSB0") # temporal fix because max3232 adaptors are not ready yet
-            # self.serial_connection = serial.Serial("/dev/ttyAMA0")
-            self.serial_connection = 9600
-            self.serial_connection = serial.PARITY_NONE
-            self.serial_connection = serial.STOPBITS_TWO
-            self.serial_connection = serial.EIGHTBITS
-        else:
-            self.serial_connection = serial_connection
+        # setting up serial connection
+        self.serial_connection = serial.Serial(serial_port)
+        self.serial_connection.baudrate = 9600
+        self.serial_connection.parity = serial.PARITY_NONE
+        self.serial_connection.stopbits = serial.STOPBITS_TWO
+        self.serial_connection.bytesize = serial.EIGHTBITS
+
         self.max_chunk_size = max_chunk_size
         self.compression = compression
+
 
         # Setting up th reader thread
         self.protocol = serial.threaded.ReaderThread(self.serial_connection, receiver.NexedgePacketizer)
