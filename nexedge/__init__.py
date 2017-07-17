@@ -212,3 +212,34 @@ class Radio(object):
 
         return future
 
+    def is_alive(self, **kwargs):
+        """
+        Determines if the Radio connection is alive.
+        :return: bool
+        """
+
+        # try to send a dumb getChannelStatus with small timeout, catch error
+        # we ignore a channel status here
+
+        future = self.send_pool.submit(send_command,
+                                       [getChannelStatus()],
+                                       self.protocol,
+                                       self.channel_status,
+                                       self.transmission_queue,
+                                       max_retries=1,
+                                       channel_timeout=2,
+                                       confirmation_timeout=10,
+                                       force_send=True,
+                                       **kwargs)
+
+        try:
+            # will be true if successful
+            return future.result()
+        except exceptions.SenderException:
+            # serial port is open
+            return True
+        except serial.SerialException:
+            return False
+        except:
+            # something happened
+            return False
