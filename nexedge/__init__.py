@@ -221,25 +221,30 @@ class Radio(object):
         # try to send a dumb getChannelStatus with small timeout, catch error
         # we ignore a channel status here
 
+        tick_1 = self.channel_status.time_last_updated
+
         future = self.send_pool.submit(send_command,
                                        [getChannelStatus()],
                                        self.protocol,
                                        self.channel_status,
                                        self.transmission_queue,
                                        max_retries=1,
-                                       channel_timeout=2,
-                                       confirmation_timeout=10,
+                                       confirmation_timeout=5,
                                        force_send=True,
                                        **kwargs)
 
         try:
-            # will be true if successful
-            return future.result()
-        except exceptions.SenderException:
-            # serial port is open
-            return True
+            # will never be successful
+            future.result()
+        except exceptions.ChannelTimeout:
+            # just try again
+            return self.is_alive()
+        except (exceptions.SendMaxRetries, ConfirmationTimeout):
+            # we will get an error
+            tick_2 = self.channel_status.time_last_updated
+            # if the ticks are different, we received some device statusv via serial. alive!
+            print(tick_1)
+            print(tick_2)
+            return True if tick_1 != tick_2 else False
         except serial.SerialException:
-            return False
-        except:
-            # something happened
             return False

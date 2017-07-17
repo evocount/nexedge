@@ -100,6 +100,10 @@ def send_command(
                     # raise Error
                     raise SendMaxRetries
                 # -> try again in the next loop
+                elif force_send:
+                    print("force retry NOW")
+                    time_channel = time.time()
+                    continue
                 else:
                     command_send = False
                     # wait for a random fraction of 20 seconds
