@@ -31,7 +31,8 @@ def send_command(
         confirmation_timeout: int = 60,
         occupied_snooze: int = 1,
         confirmation_snooze: int = 1,
-        retry_snooze: int = 20) -> bool:
+        retry_snooze: int = 20,
+        force_send = False) -> bool:
     """
     Sends a List of radio commands via serial. Returns True if success, else an exception is raised.
     :param commandlist:
@@ -44,6 +45,7 @@ def send_command(
     :param occupied_snooze:
     :param confirmation_snooze:
     :param retry_snooze:
+    :param force_send:
     :return: 
     """
     for command in commandlist:
@@ -58,7 +60,7 @@ def send_command(
 
         while not success:
             # optimal start condition -> send command
-            if not command_send and channel_status.is_free_timed():
+            if not command_send and (channel_status.is_free_timed() or force_send):
                 protocol.write(command)
                 command_send = True
                 send_tries += 1
@@ -98,6 +100,10 @@ def send_command(
                     # raise Error
                     raise SendMaxRetries
                 # -> try again in the next loop
+                elif force_send:
+                    print("force retry NOW")
+                    time_channel = time.time()
+                    continue
                 else:
                     command_send = False
                     # wait for a random fraction of 20 seconds

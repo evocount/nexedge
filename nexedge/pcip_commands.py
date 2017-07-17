@@ -116,3 +116,13 @@ def setUnitStatus(unitID: bytes, status: bytes) -> bytes:
     """
     command_as_bytes = (b"\x02" + b"g" + b"E" + b"U" + unitID + status + b"\x03")
     return command_as_bytes
+
+
+# get status information
+def getChannelStatus() -> bytes:
+    """
+    Get the
+    :return:
+    """
+    command_as_bytes = (b"\x02" + b"j" + b"c" + b"s" + b"\x03")
+    return command_as_bytes

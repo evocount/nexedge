@@ -37,6 +37,7 @@ class ChannelStatus(object):
     channel_free = True
     radio_status = "unknown"
     time_unfree = time.time()
+    time_last_updated = 0
 
     def __init__(self, free_threshold: int = 2):
         """
@@ -63,6 +64,7 @@ class ChannelStatus(object):
     def set_free(self):
         self.channel_free = True
         self.radio_status = "off"
+        self.time_last_updated = time.time()
 
     def set_unfree(self, status):
         """
@@ -74,6 +76,7 @@ class ChannelStatus(object):
         self.channel_free = False
         self.time_unfree = time.time()
         self.radio_status = status
+        self.time_last_updated = time.time()
 
     def set_red(self):
         self.set_unfree("sending")
