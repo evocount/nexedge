@@ -6,7 +6,7 @@ def readme():
 
 
 setup(name='nexedge',
-      version='0.1',
+      version='0.1b',
       description='Kenwood Nexedge communication',
       url='https://gitlab.com/evocount/nexedge',
       author='Suthep Pomjaksilp',
