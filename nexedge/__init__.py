@@ -229,7 +229,7 @@ class Radio(object):
                                        self.channel_status,
                                        self.transmission_queue,
                                        max_retries=1,
-                                       confirmation_timeout=2,
+                                       confirmation_timeout=4,
                                        force_send=True,
                                        **kwargs)
 
@@ -243,8 +243,8 @@ class Radio(object):
             # we will get an error
             tick_2 = self.channel_status.time_last_updated
             # if the ticks are different, we received some device statusv via serial. alive!
-            print(tick_1)
-            print(tick_2)
+            # print(tick_1)
+            # print(tick_2)
             return True if tick_1 != tick_2 else False
         except serial.SerialException:
             return False
