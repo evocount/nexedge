@@ -180,32 +180,36 @@ class NexedgePacketizer(serial.threaded.FramedPacket):
         :param message: bytes
         :return: answer: str or None
         """
-        if message[0] == b'g'[0] and message[1] == b'F'[0]:  # SDM
-            answer = self.process_message(message)
-            self.answer_queue.put(answer)
+        try:
+            if message[0] == b'g'[0] and message[1] == b'F'[0]:  # SDM
+                answer = self.process_message(message)
+                self.answer_queue.put(answer)
 
-        elif message[0] == b'g'[0] and message[1] == b'G'[0]:  # LDM
-            answer = self.process_message(message)
-            self.answer_queue.put(answer)
+            elif message[0] == b'g'[0] and message[1] == b'G'[0]:  # LDM
+                answer = self.process_message(message)
+                self.answer_queue.put(answer)
 
-        elif message[0] == b'g'[0] and message[1] == b'E'[0]:  # StatusMessage
-            answer = self.process_status(message)
-            self.status_queue.put(answer)
+            elif message[0] == b'g'[0] and message[1] == b'E'[0]:  # StatusMessage
+                answer = self.process_status(message)
+                self.status_queue.put(answer)
 
-        elif message[0] == b'J'[0] and message[1] == b'A'[0]:  # Device status
-            self.process_device(message)
+            elif message[0] == b'J'[0] and message[1] == b'A'[0]:  # Device status
+                self.process_device(message)
 
-        elif message[0] == b'J'[0] and message[1] == b'E'[0]:  # DisplayContent
+            elif message[0] == b'J'[0] and message[1] == b'E'[0]:  # DisplayContent
+                pass
+
+            elif message[0] == b'0'[0]:  # transmission success
+                self.transmission_queue.put(True)
+
+            elif message[0] == b'1'[0]:  # transmission error
+                self.transmission_queue.put(False)
+
+            else:
+                pass
+        except IndexError:
             pass
-
-        elif message[0] == b'0'[0]:  # transmission success
-            self.transmission_queue.put(True)
-
-        elif message[0] == b'1'[0]:  # transmission error
-            self.transmission_queue.put(False)
-
-        else:
-            pass
+        
 
 
 def unite_chunks(chunks: [bytes, ]) -> bytes:
