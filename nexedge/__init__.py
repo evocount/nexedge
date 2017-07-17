@@ -229,7 +229,7 @@ class Radio(object):
                                        self.channel_status,
                                        self.transmission_queue,
                                        max_retries=1,
-                                       confirmation_timeout=5,
+                                       confirmation_timeout=2,
                                        force_send=True,
                                        **kwargs)
 
