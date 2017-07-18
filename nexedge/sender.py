@@ -32,7 +32,7 @@ def send_command(
         occupied_snooze: int = 1,
         confirmation_snooze: int = 1,
         retry_snooze: int = 20,
-        force_send = False) -> bool:
+        force_send: bool = False) -> bool:
     """
     Sends a List of radio commands via serial. Returns True if success, else an exception is raised.
     :param commandlist:

@@ -186,6 +186,8 @@ class Radio(object):
         # chunks[-1] = chunks[-1] + data_cs_bytes + b'json'
         chunks[-1] = chunks[-1] + b'json'
 
+        print("transmission consists of {} chunks of size {} bytes".format(len(chunks), len(chunks[0])))
+
         future = self.send_pool.submit(send_command,
                                        [longMessage2Unit(unitID=target, message=c) for c in chunks],
                                        self.protocol,
@@ -238,13 +240,15 @@ class Radio(object):
             future.result()
         except exceptions.ChannelTimeout:
             # just try again
+            print("got radio channel timeout, invoking is_alive() again")
             return self.is_alive()
         except (exceptions.SendMaxRetries, ConfirmationTimeout):
             # we will get an error
             tick_2 = self.channel_status.time_last_updated
-            # if the ticks are different, we received some device statusv via serial. alive!
+            # if the ticks are different, we received some device status via serial. alive!
             # print(tick_1)
             # print(tick_2)
-            return True if tick_1 != tick_2 else False
+            return tick_1 != tick_2
         except serial.SerialException:
+            print("got a serial exception")
             return False
