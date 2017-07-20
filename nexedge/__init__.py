@@ -225,5 +225,6 @@ class Radio(object):
         """
         # check when we received a package for the last time
         # == 0 tells us, the device was just recently started, ignore this.
+        print("radio last updated {}s ago".format(time.time() - self.channel_status.time_last_updated))
         return True if self.channel_status.time_last_updated == 0 \
             else self.channel_status.time_last_updated + update_threshold > time.time()
