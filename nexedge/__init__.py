@@ -22,6 +22,9 @@ import concurrent.futures
 import serial
 import serial.threaded
 
+# time
+import time
+
 # local stuff
 from . import receiver, sender, pcip_commands, exceptions
 from .sender import send_command
@@ -214,41 +217,13 @@ class Radio(object):
 
         return future
 
-    def is_alive(self, **kwargs):
+    def is_alive(self, update_threshold: int=60, **kwargs):
         """
         Determines if the Radio connection is alive.
+        :param: update_threshold
         :return: bool
         """
-
-        # try to send a dumb getChannelStatus with small timeout, catch error
-        # we ignore a channel status here
-
-        tick_1 = self.channel_status.time_last_updated
-
-        future = self.send_pool.submit(send_command,
-                                       [getChannelStatus()],
-                                       self.protocol,
-                                       self.channel_status,
-                                       self.transmission_queue,
-                                       max_retries=1,
-                                       confirmation_timeout=4,
-                                       force_send=True,
-                                       **kwargs)
-
-        try:
-            # will never be successful
-            future.result()
-        except exceptions.ChannelTimeout:
-            # just try again
-            print("got radio channel timeout, invoking is_alive() again")
-            return self.is_alive()
-        except (exceptions.SendMaxRetries, ConfirmationTimeout):
-            # we will get an error
-            tick_2 = self.channel_status.time_last_updated
-            # if the ticks are different, we received some device status via serial. alive!
-            # print(tick_1)
-            # print(tick_2)
-            return tick_1 != tick_2
-        except serial.SerialException:
-            print("got a serial exception")
-            return False
+        # check when we received a package for the last time
+        # == 0 tells us, the device was just recently started, ignore this.
+        return True if self.channel_status.time_last_updated == 0 \
+            else self.channel_status.time_last_updated + update_threshold > time.time()
