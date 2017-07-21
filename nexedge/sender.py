@@ -26,7 +26,7 @@ def send_command(
         protocol: serial.threaded.ReaderThread,
         channel_status: receiver.ChannelStatus,
         transmission_queue: Queue,
-        max_retries: int = 2,
+        max_retries: int = 1,
         channel_timeout: int = 30,
         confirmation_timeout: int = 60,
         occupied_snooze: int = 1,
