@@ -90,7 +90,7 @@ def send_command(
                 # no timeout -> got to sleep
                 else:
                     time.sleep(confirmation_snooze)
-                    print("no confirmation yet, slept for {}s".format(confirmation_snooze))
+                    # print("no confirmation yet, slept for {}s".format(confirmation_snooze))
                     continue
             # confirmation error -> check for max_retries
             elif not transmission_queue.get():

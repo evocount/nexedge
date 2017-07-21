@@ -217,7 +217,7 @@ class Radio(object):
 
         return future
 
-    def is_alive(self, update_threshold: int=60, **kwargs):
+    def is_alive(self, update_threshold: int=80, **kwargs):
         """
         Determines if the Radio connection is alive.
         :param: update_threshold
