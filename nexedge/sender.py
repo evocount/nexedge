@@ -31,12 +31,12 @@ def send_command(
         confirmation_timeout: int = 60,
         occupied_snooze: int = 1,
         confirmation_snooze: int = 1,
-        retry_snooze: int = 20,
+        retry_snooze: int = 10,
         force_send: bool = False) -> bool:
     """
     Sends a List of radio commands via serial. Returns True if success, else an exception is raised.
     :param commandlist:
-    :param protocol: 
+    :param protocol:
     :param channel_status:
     :param transmission_queue:
     :param max_retries:
@@ -46,7 +46,7 @@ def send_command(
     :param confirmation_snooze:
     :param retry_snooze:
     :param force_send:
-    :return: 
+    :return:
     """
     for command in commandlist:
         success = False
