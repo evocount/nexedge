@@ -8,6 +8,11 @@ Suthep Pomjaksilp <sp@laz0r.de> 2017
 
 # pyserial
 import serial.threaded
+import asyncio
+import serial_asyncio
+from six import iterbytes, int2byte
+from functools import partial
+import logging
 
 # compression
 import zlib
@@ -23,22 +28,22 @@ import json
 
 # queues
 import queue
-from queue import Queue
+from asyncio import Queue
 
 # local stuff
 from . import exceptions
 from .exceptions import *
 
 
-class ChannelStatus(object):
+class ChannelStatus:
     """
     This class contains the status of the radio channel as indicated by the led.
     """
-    channel_free = True
-    radio_status = "unknown"
-    time_unfree = time.time()
+    _channel_free = True
+    _radio_status = "unknown"
+    _time_unfree = time.time()
     # when did we receive a package for the last time
-    time_last_updated = 0
+    _time_last_updated = 0
 
     def __init__(self, free_threshold: int = 2):
         """
@@ -48,23 +53,23 @@ class ChannelStatus(object):
         """
         self.free_threshold = free_threshold
 
-    def is_free(self):
+    def update(self):
         """
-        True if channel is free (led off).
-        :return: bool
+        Update the time on this object.
         """
-        return self.channel_free
+        self._time_last_updated = time.time()
 
-    def is_free_timed(self):
+    def free(self):
         """
         True if channel is free (led off) and was free for the last self.free_threshold seconds (default = 2s).
         :return: bool
         """
-        return self.channel_free and time.time() - self.free_threshold > self.time_unfree
+        return self._channel_free and \
+               (time.time() - self.free_threshold > self._time_unfree)
 
     def set_free(self):
-        self.channel_free = True
-        self.radio_status = "off"
+        self._channel_free = True
+        self._radio_status = "off"
 
     def set_unfree(self, status):
         """
@@ -73,9 +78,9 @@ class ChannelStatus(object):
         :param status: str
         :return:
         """
-        self.channel_free = False
-        self.time_unfree = time.time()
-        self.radio_status = status
+        self._channel_free = False
+        self._time_unfree = time.time()
+        self._radio_status = status
 
     def set_red(self):
         self.set_unfree("sending")
@@ -85,6 +90,100 @@ class ChannelStatus(object):
 
     def set_orange(self):
         self.set_unfree("idle")
+
+
+class Output(asyncio.Protocol):
+
+    START = b'\x02'
+    STOP = b'\x03'
+
+    _buffer = b""
+
+    _transport = None
+
+    _channel = None
+    _queue = None
+
+    def __init__(self, queue: asyncio.Queue,  logger: logging.Logger=None):
+        # get a logger
+        if logger is None:
+            self.logger = logging.getLogger(__name__)
+        else:
+            self.logger = logger
+
+        # queue setup
+        self._queue = asyncio.Queue()
+
+        # set up a channel object
+        self._channel = ChannelStatus()
+
+    @property
+    def queue(self):
+        if self._queue is None:
+            raise Exception
+        return self._queue
+
+    @property
+    def transport(self):
+        if self._transport is None:
+            raise Exception
+        return self._transport
+
+    @property
+    def channel(self):
+        return self._channel
+
+    def _increase_baud(self):
+        self.logger.debug("increasing baud rate to 57600 (max of device)")
+        self.transport.write(b"\x02" + b"O" + b"8" + b"\x03")
+        self.transport.serial.baudrate = 57600
+
+    def connection_made(self, transport):
+        """
+        This is explicitly made blockking, so that is executed directly after
+        a connection is established
+        :param transport:
+        :return:
+        """
+        self.logger.debug('port opened')
+        self.transport = transport
+
+        # manipulate Serial object via transport
+        self.transport.serial.parity = serial.PARITY_NONE
+        self.transport.serial.stopbits = serial.STOPBITS_TWO
+        self.transport.serial.bytesize = serial.EIGHTBITS
+
+        # now increase baud rate
+        self._increase_baud()
+
+        # log port settings
+        self.logger.debug(transport)
+
+
+    def data_received(self, data):
+        for p in iterbytes(data):
+            particle = int2byte(p)
+            if particle == self.STOP:
+                self.logger.debug("STOP received")
+                self.logger.debug(self._buffer)
+                asyncio.ensure_future(self.queue.put(self._buffer))
+            if particle == self.START:
+                self.logger.debug("START received, clearing buffer")
+                self._buffer = b""
+            else:
+                self._buffer += particle
+
+    def connection_lost(self, exc):
+        self.logger.error('port closed, stopping loop')
+        self.transport.loop.stop()
+
+    def pause_writing(self):
+        self.logger.warning('pause writing')
+        self.logger.warning(self.transport.get_write_buffer_size())
+
+    def resume_writing(self):
+        self.logger.warning(print('resume writing'))
+        self.logger.warning(self.transport.get_write_buffer_size())
 
 
 class NexedgePacketizer(serial.threaded.FramedPacket):
