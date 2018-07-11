@@ -6,15 +6,48 @@ Proprietary and confidential
 Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
+
+# base method to wrap the command into start and end bytes
+def wrap(command: bytes):
+    """
+    Wrap the given command into the padding bytes \x02 and \x03
+    :param command: bytes
+    :return: padded command: bytes
+    """
+    start = b"\x02"
+    stop = b"\x03"
+    return start + command + stop
+
+
+# service methods
+def set_baudrate(baud: int=57600):
+    """
+    Set the baud rate to one of the possible values.
+    Raises AssertionError if no valid value is used.
+    :param baud: int
+    :return: command: bytes
+    """
+    settings = {
+        1200:   b"2",
+        2400:   b"3",
+        4800:   b"4",
+        9600:   b"5",
+        19200:  b"6",
+        38400:  b"7",
+        57600:  b"8",
+    }
+
+    assert baud in settings.keys(), "selected baudrate is not valid"
+    return wrap(b"O" + settings[baud])
+
+
 # Callfunctions
 def startcall() -> bytes:
     """
     Starting a voice call
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"A" + b"\x03")
-
-    return command_as_bytes
+    return wrap(b"A")
 
 
 def endcall() -> bytes:
@@ -22,9 +55,7 @@ def endcall() -> bytes:
     Ending a voice call
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"C" + b"\x03")
-
-    return command_as_bytes
+    return wrap(b"C")
 
 
 # message functions
@@ -35,9 +66,7 @@ def shortGroupMessage(groupID: bytes, message: bytes) -> bytes:
     :param message: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"F" + b"G" + groupID + message + b"\x03")
-
-    return command_as_bytes
+    return wrap(b"g" + b"F" + b"G" + groupID + message)
 
 
 def shortMessage2all(message: bytes):
@@ -46,9 +75,7 @@ def shortMessage2all(message: bytes):
     :param message: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"F" + b"G" + b"00000" + message + b"\x03")
-
-    return command_as_bytes
+    return wrap(b"g" + b"F" + b"G" + b"00000" + message)
 
 
 def shortMessage2Unit(unitID: bytes, message: bytes) -> bytes:
@@ -58,9 +85,7 @@ def shortMessage2Unit(unitID: bytes, message: bytes) -> bytes:
     :param message: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"F" + b"U" + unitID + message + b"\x03")
-
-    return command_as_bytes
+    return wrap(b"g" + b"F" + b"U" + unitID + message)
 
 
 def longGroupMessage(groupID: bytes, message: bytes) -> bytes:
@@ -70,8 +95,7 @@ def longGroupMessage(groupID: bytes, message: bytes) -> bytes:
     :param message: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"G" + b"G" + groupID + message + b"\x03")
-    return command_as_bytes
+    return wrap(b"g" + b"G" + b"G" + groupID + message)
 
 
 def longMessage2all(message: bytes) -> bytes:
@@ -80,8 +104,7 @@ def longMessage2all(message: bytes) -> bytes:
     :param message: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"G" + b"G" + b"00000" + message + b"\x03")
-    return command_as_bytes
+    return wrap(b"g" + b"G" + b"G" + b"00000" + message)
 
 
 def longMessage2Unit(unitID: bytes, message: bytes) -> bytes:
@@ -91,8 +114,7 @@ def longMessage2Unit(unitID: bytes, message: bytes) -> bytes:
     :param message: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"G" + b"U" + unitID + message + b"\x03")
-    return command_as_bytes
+    return wrap(b"g" + b"G" + b"U" + unitID + message)
 
 
 # status functions
@@ -103,8 +125,7 @@ def setGroupStatus(groupID: bytes, status: bytes) -> bytes:
     :param status: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"E" + b"G" + groupID + status + b"\x03")
-    return command_as_bytes
+    return wrap(b"g" + b"E" + b"G" + groupID + status)
 
 
 def setUnitStatus(unitID: bytes, status: bytes) -> bytes:
@@ -114,8 +135,7 @@ def setUnitStatus(unitID: bytes, status: bytes) -> bytes:
     :param status: 
     :return: 
     """
-    command_as_bytes = (b"\x02" + b"g" + b"E" + b"U" + unitID + status + b"\x03")
-    return command_as_bytes
+    return wrap(b"g" + b"E" + b"U" + unitID + status)
 
 
 # get status information
@@ -124,5 +144,4 @@ def getChannelStatus() -> bytes:
     Get the
     :return:
     """
-    command_as_bytes = (b"\x02" + b"j" + b"c" + b"s" + b"\x03")
-    return command_as_bytes
+    return wrap(b"j" + b"c" + b"s")
