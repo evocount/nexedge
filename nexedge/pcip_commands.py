@@ -3,7 +3,7 @@ Copyright (C) EvoCount UG - All Rights Reserved
 Unauthorized copying of this file, via any medium is strictly prohibited
 Proprietary and confidential
 
-Suthep Pomjaksilp <sp@laz0r.de> 2017
+Suthep Pomjaksilp <sp@laz0r.de> 2017-2018
 """
 
 
@@ -39,6 +39,19 @@ def set_baudrate(baud: int=57600):
 
     assert baud in settings.keys(), "selected baudrate is not valid"
     return wrap(b"O" + settings[baud])
+
+
+def set_repeat(repeat: bool=False):
+    """
+    Control if failed messages should be repeated.
+    :param repeat: bool
+    :return: command: bytes
+    """
+    settings = {
+        True:   b"1",
+        False:  b"0",
+    }
+    return wrap(b"k" + b"R" + settings[repeat])
 
 
 # Callfunctions

@@ -1,66 +1,34 @@
-import time
+"""
+Copyright (C) EvoCount UG - All Rights Reserved
+Unauthorized copying of this file, via any medium is strictly prohibited
+Proprietary and confidential
+
+Suthep Pomjaksilp <sp@laz0r.de> 2017-2018
+"""
+
 import asyncio
 import serial
-import serial_asyncio
-from six import int2byte
-from functools import partial
 import logging
 
 # local
-from channel import ChannelStatus
-from pcip_commands import set_baudrate
-
-
-async def read_queue(queue):
-    while True:
-        s, m = await queue.get()
-        print("received from {}: {}".format(s, m))
-
-
-async def read_channel(channel):
-    while True:
-
-        print("channel is free: {}".format(channel.free()))
-        await asyncio.sleep(2)
-
-
-# this is basically a copy from the pyserial_async source, but we need to get
-# the transport to manipulate serial
-@asyncio.coroutine
-def open_serial_connection(*,
-                           loop=None,
-                           limit=asyncio.streams._DEFAULT_LIMIT,
-                           **kwargs):
-    """
-    A wrapper for create_serial_connection() returning a (reader,
-    writer) pair.
-    The reader returned is a StreamReader instance; the writer is a
-    StreamWriter instance.
-    The arguments are all the usual arguments to Serial(). Additional
-    optional keyword arguments are loop (to set the event loop instance
-    to use) and limit (to set the buffer limit passed to the
-    StreamReader.
-    This function is a coroutine.
-    """
-    if loop is None:
-        loop = asyncio.get_event_loop()
-    reader = asyncio.StreamReader(limit=limit, loop=loop)
-    protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
-    transport, _ = yield from serial_asyncio.create_serial_connection(
-        loop=loop,
-        protocol_factory=lambda: protocol,
-        **kwargs)
-    writer = asyncio.StreamWriter(transport, protocol, reader, loop)
-    return transport, reader, writer
+from .channel import ChannelStatus
+from .pcip_commands import set_baudrate, set_repeat, longMessage2Unit
+from .utils import open_serial_connection
 
 
 class Radio:
     START = b'\x02'
     STOP = b'\x03'
 
+    MAXSIZE = 4000
+
+    _command_return = None
+
     def __init__(self,
                  loop,
                  serial_kwargs: dict,
+                 change_baudrate: bool = False,
+                 retry_sending: bool = True,
                  logger: logging.Logger = None):
         # get a logger
         if logger is None:
@@ -80,38 +48,57 @@ class Radio:
         self.data_queue = asyncio.Queue()
         # received status messages
         self.status_queue = asyncio.Queue()
-        # transmission result queue
-        self.transmission_queue = asyncio.Queue(maxsize=1)
 
         # channel status object
         self.channel = ChannelStatus(logger=self.logger)
 
         # open serial connection
         # asyncio.ensure_future(self.open_connection())
-        self.loop.create_task(self.open_connection())
+        self.loop.create_task(self.open_connection(change_baudrate, retry_sending))
 
-    async def open_connection(self):
+    async def open_connection(self, change_baudrate, retry):
         # open the serial connection as reader/writer pair
         self.logger.debug("setting up reader/writer pair")
-        self.transport, self.reader, self.writer = await open_serial_connection(
+        self._transport, self._reader, self._writer = await open_serial_connection(
                 loop=self.loop, **self._serial_kwargs)
 
         # manipulate Serial object via transport
-        self.transport.serial.parity = serial.PARITY_NONE
-        self.transport.serial.stopbits = serial.STOPBITS_TWO
-        self.transport.serial.bytesize = serial.EIGHTBITS
+        self._transport.serial.parity = serial.PARITY_NONE
+        self._transport.serial.stopbits = serial.STOPBITS_TWO
+        self._transport.serial.bytesize = serial.EIGHTBITS
 
         # change baud rate
-        # self._increase_baudrate()
+        if change_baudrate:
+            self.logger.info("try increasing baud rate to 57600")
+            success = await self._increase_baudrate()
+            if success:
+                self.logger.info("baudrate set to 57600")
+                self._transport.serial.baudrate = 57600
+            else:
+                self.logger.info("incresing baudrate failed, staying at 9600")
 
-    def _increase_baudrate(self):
+        # disable air retries
+        # should not be changed atm since I do not know why it is failing
+        # if not retry:
+        #     self.logger.info("disabling repeated sending")
+        #     success = await self._disable_retry()
+        #     if success:
+        #         self.logger.info("retry disabled")
+        #     else:
+        #         self.logger.info("retry still unchanged")
+
+    async def _increase_baudrate(self):
         """
         Increase the serial baudrate to maximum of 57600
         """
-        self.logger.info("increasing baud rate to 57600")
-        # writing to serial is done in a blocking fashion
-        self.writer.write(set_baudrate(baud=57600))
-        self.transport.serial.baudrate = 57600
+        return await self.write(set_baudrate(baud=57600))
+
+
+    async def _disable_retry(self):
+        """
+        Disable repeated sending
+        """
+        return await self.write(set_repeat(True))
 
     async def receiver(self):
         self.logger.info("starting receiver loop")
@@ -119,18 +106,15 @@ class Radio:
             self.logger.debug("waiting for the next message")
             # read until the message is over
             # this is the blocking call
-            buffer = await self.reader.readuntil(self.STOP)
-            #self.logger.debug("dumping buffer {}".format(buffer))
+            buffer = await self._reader.readuntil(self.STOP)
+            self.logger.debug("dumping buffer {}".format(buffer))
 
             # split buffer by stop byte bc it is still there
             # see docs for stream classes in asyncio
-            buffer, _tail = buffer.split(self.STOP)
+            buffer, *_tail = buffer.split(self.STOP)
 
             # split buffer at start byte, head should be empty by design
-            _head, message = buffer.split(self.START)
-            if _head != b"" or _tail != b"":
-                # TODO custom exception
-                raise Exception
+            *_head, message = buffer.split(self.START)
 
             # update channel status
             self.channel.update()
@@ -166,12 +150,18 @@ class Radio:
                 # transmission success
                 elif message[0] == b'0'[0]:
                     self.logger.debug("got trans. success")
-                    self.transmission_queue.put(True)
+                    if self._command_return is not None:
+                        self._command_return.set_result(True)
+                    else:
+                        self.logger.debug("but no one cared")
 
                 # transmission error
                 elif message[0] == b'1'[0]:
                     self.logger.debug("got trans. failure")
-                    self.transmission_queue.put(False)
+                    if self._command_return is not None:
+                        self._command_return.set_result(False)
+                    else:
+                        self.logger.debug("but no one cared")
 
                 else:
                     pass
@@ -230,24 +220,40 @@ class Radio:
         else:
             pass
 
+    async def write(self, command: bytes):
+        """
+        low level write something to serial device
+        :param command:
+        :return:
+        """
+        self._command_return = asyncio.Future()
+        self._writer.write(command)
 
-if __name__ == '__main__':
-    # logging
-    logging.basicConfig(level=logging.DEBUG)
-    logger = logging.getLogger(__name__)
+        # result is either True or False
+        result = await self._command_return
+        self.logger.debug("write result {}".format(result))
+        self._command_return = None
+        return result
 
-    # async loop
-    loop = asyncio.get_event_loop()
+    async def send(self, command):
+        """
+        wait for channel to get free and write to device
+        :param command:
+        :return:
+        """
+        while not self.channel.free():
+            await asyncio.sleep(.05)
 
-    serial_conf = {
-        "url": '/dev/ttyUSB0',
-        "baudrate": 9600,
-        #"baudrate": 57600,
-    }
-    r = Radio(loop=loop, serial_kwargs=serial_conf, logger=logger)
-    loop.create_task(read_queue(r.data_queue))
-    loop.create_task(read_channel(r.channel))
-    loop.create_task(r.receiver())
+        return await self.write(command)
 
-    loop.run_forever()
-    loop.close()
+    async def send_LDM(self, target_id: bytes = None, payload: bytes = None):
+        assert (target_id is not None) and (payload is not None),\
+            "target and payload have to be set!"
+
+        self.logger.debug("sending LDM with payload length {}".format(len(payload)))
+        if len(payload) > self.MAXSIZE:
+            # TODO custom exception
+            raise Exception
+
+        cmd = longMessage2Unit(unitID=target_id, message=payload)
+        return await self.send(cmd)
