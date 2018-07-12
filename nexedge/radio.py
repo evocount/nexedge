@@ -99,6 +99,13 @@ class Radio:
         """
         return await self.write(set_repeat(True))
 
+    def maxsize(self):
+        """
+        Return max package size.
+        :return: int
+        """
+        return self.MAXSIZE
+
     async def receiver(self):
         logger.info("starting receiver loop")
         while True:
@@ -249,7 +256,7 @@ class Radio:
         assert (target_id is not None) and (payload is not None),\
             "target and payload have to be set!"
 
-        logger.debug("sending LDM with payload length {}".format(len(payload)))
+        logger.debug("sending LDM with payload length {} to {}".format(len(payload), target_id))
         if len(payload) > self.MAXSIZE:
             # TODO custom exception
             raise Exception
