@@ -15,6 +15,9 @@ from .channel import ChannelStatus
 from .pcip_commands import set_baudrate, set_repeat, longMessage2Unit
 from .utils import open_serial_connection
 
+# setup logging
+logger = logging.getLogger(__name__)
+
 
 class Radio:
     START = b'\x02'
@@ -29,13 +32,9 @@ class Radio:
                  serial_kwargs: dict,
                  change_baudrate: bool = False,
                  retry_sending: bool = True,
-                 logger: logging.Logger = None):
+                 ):
         # get a logger
-        if logger is None:
-            self.logger = logging.getLogger(__name__)
-        else:
-            self.logger = logger
-        self.logger.info("initialized Radio instance with logger")
+        logger.info("initialized Radio instance")
 
         # setting loop
         self.loop = loop
@@ -50,7 +49,7 @@ class Radio:
         self.status_queue = asyncio.Queue()
 
         # channel status object
-        self.channel = ChannelStatus(logger=self.logger)
+        self.channel = ChannelStatus()
 
         # open serial connection
         # asyncio.ensure_future(self.open_connection())
@@ -58,7 +57,7 @@ class Radio:
 
     async def open_connection(self, change_baudrate, retry):
         # open the serial connection as reader/writer pair
-        self.logger.debug("setting up reader/writer pair")
+        logger.debug("setting up reader/writer pair")
         self._transport, self._reader, self._writer = await open_serial_connection(
                 loop=self.loop, **self._serial_kwargs)
 
@@ -69,23 +68,23 @@ class Radio:
 
         # change baud rate
         if change_baudrate:
-            self.logger.info("try increasing baud rate to 57600")
+            logger.info("try increasing baud rate to 57600")
             success = await self._increase_baudrate()
             if success:
-                self.logger.info("baudrate set to 57600")
+                logger.info("baudrate set to 57600")
                 self._transport.serial.baudrate = 57600
             else:
-                self.logger.info("incresing baudrate failed, staying at 9600")
+                logger.info("incresing baudrate failed, staying at 9600")
 
         # disable air retries
         # should not be changed atm since I do not know why it is failing
         # if not retry:
-        #     self.logger.info("disabling repeated sending")
+        #     logger.info("disabling repeated sending")
         #     success = await self._disable_retry()
         #     if success:
-        #         self.logger.info("retry disabled")
+        #         logger.info("retry disabled")
         #     else:
-        #         self.logger.info("retry still unchanged")
+        #         logger.info("retry still unchanged")
 
     async def _increase_baudrate(self):
         """
@@ -101,13 +100,13 @@ class Radio:
         return await self.write(set_repeat(True))
 
     async def receiver(self):
-        self.logger.info("starting receiver loop")
+        logger.info("starting receiver loop")
         while True:
-            self.logger.debug("waiting for the next message")
+            logger.debug("waiting for the next message")
             # read until the message is over
             # this is the blocking call
             buffer = await self._reader.readuntil(self.STOP)
-            self.logger.debug("dumping buffer {}".format(buffer))
+            # logger.debug("dumping buffer {}".format(buffer))
 
             # split buffer by stop byte bc it is still there
             # see docs for stream classes in asyncio
@@ -123,45 +122,45 @@ class Radio:
             try:
                 # SDM
                 if message[0] == b'g'[0] and message[1] == b'F'[0]:
-                    self.logger.debug("got SDM {}".format(message))
+                    logger.debug("got SDM {}".format(message))
                     self.process_message(message)
 
                 # LDM
                 elif message[0] == b'g'[0] and message[1] == b'G'[0]:
-                    self.logger.debug("got LDM {}".format(message))
+                    logger.debug("got LDM {}".format(message))
                     self.process_message(message)
 
                 # StatusMessage
                 elif message[0] == b'g'[0] and message[1] == b'E'[0]:
-                    self.logger.debug("got status {}".format(message))
+                    logger.debug("got status {}".format(message))
                     self.process_status(message)
                     pass
 
                 # Device status
                 elif message[0] == b'J'[0] and message[1] == b'A'[0]:
-                    self.logger.debug("got device status {}".format(message))
+                    logger.debug("got device status {}".format(message))
                     self.process_device(message)
 
                 # DisplayContent
                 elif message[0] == b'J'[0] and message[1] == b'E'[0]:
-                    self.logger.debug("got display content {}".format(message))
+                    logger.debug("got display content {}".format(message))
                     pass
 
                 # transmission success
                 elif message[0] == b'0'[0]:
-                    self.logger.debug("got trans. success")
+                    logger.debug("got trans. success")
                     if self._command_return is not None:
                         self._command_return.set_result(True)
                     else:
-                        self.logger.debug("but no one cared")
+                        logger.debug("but no one cared")
 
                 # transmission error
                 elif message[0] == b'1'[0]:
-                    self.logger.debug("got trans. failure")
+                    logger.debug("got trans. failure")
                     if self._command_return is not None:
                         self._command_return.set_result(False)
                     else:
-                        self.logger.debug("but no one cared")
+                        logger.debug("but no one cared")
 
                 else:
                     pass
@@ -177,8 +176,8 @@ class Radio:
         """
         sender = message[3:8]  # extract sender ID
         text = message[14:]  # extract message
-        self.logger.debug("Sender-ID: {}".format(sender))
-        self.logger.debug("Message: {}".format(text))
+        logger.debug("Sender-ID: {}".format(sender))
+        logger.debug("Message: {}".format(text))
         self.data_queue.put([sender, text])
 
     def process_status(self, message: bytes):
@@ -189,8 +188,8 @@ class Radio:
         """
         sender = message[3:8]
         status = message[14:]
-        self.logger.debug("Sender-ID: {}".format(sender))
-        self.logger.debug("Status: {}".format(status))
+        logger.debug("Sender-ID: {}".format(sender))
+        logger.debug("Status: {}".format(status))
         self.status_queue.put([sender, status])
 
     def process_device(self, message: bytes):
@@ -231,7 +230,7 @@ class Radio:
 
         # result is either True or False
         result = await self._command_return
-        self.logger.debug("write result {}".format(result))
+        logger.debug("write result {}".format(result))
         self._command_return = None
         return result
 
@@ -241,7 +240,7 @@ class Radio:
         :param command:
         :return:
         """
-        while not self.channel.free():
+        while not self.channel.free() or self._command_return is not None:
             await asyncio.sleep(.05)
 
         return await self.write(command)
@@ -250,7 +249,7 @@ class Radio:
         assert (target_id is not None) and (payload is not None),\
             "target and payload have to be set!"
 
-        self.logger.debug("sending LDM with payload length {}".format(len(payload)))
+        logger.debug("sending LDM with payload length {}".format(len(payload)))
         if len(payload) > self.MAXSIZE:
             # TODO custom exception
             raise Exception

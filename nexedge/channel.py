@@ -9,6 +9,8 @@ Suthep Pomjaksilp <sp@laz0r.de> 2018
 import time
 import logging
 
+# logging setup
+logger = logging.getLogger(__name__)
 
 class ChannelStatus:
     """
@@ -20,23 +22,19 @@ class ChannelStatus:
     # when did we receive a package for the last time
     _time_last_updated = 0
 
-    def __init__(self, free_threshold: int = 2, logger: logging.Logger = None):
+    def __init__(self, free_threshold: int = 2):
         """
         Initialize Object.
         Threshold sets the time in seconds in which the channel has to be clear before it is considered really free.
         :param free_threshold: int
         """
         self.free_threshold = free_threshold
-        if logger is None:
-            self.logger = logging.getLogger(__name__)
-        else:
-            self.logger = logger
 
     def update(self):
         """
         Update the time on this object.
         """
-        self.logger.debug("updating channel")
+        logger.debug("updating channel")
         self._time_last_updated = time.time()
 
     def free(self):
@@ -48,7 +46,7 @@ class ChannelStatus:
                (time.time() - self.free_threshold > self._time_unfree)
 
     def set_free(self):
-        self.logger.debug("setting channel free")
+        logger.debug("setting channel free")
         self._channel_free = True
         self._radio_status = "off"
 
@@ -59,7 +57,7 @@ class ChannelStatus:
         :param status: str
         :return:
         """
-        self.logger.debug("setting channel unfree")
+        logger.debug("setting channel unfree")
         self._channel_free = False
         self._time_unfree = time.time()
         self._radio_status = status
