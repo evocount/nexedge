@@ -136,7 +136,7 @@ class RadioCommunicator:
                 n -= 1
             raise SendMaxRetries
 
-    def get_target_queue(self, target: bytes = None):
+    def get_target_queue(self, target: bytes = None) -> asyncio.Queue:
         """
         Getter method to retrieve a incoming data queue for a certain receiver.
         :param target:
@@ -151,6 +151,21 @@ class RadioCommunicator:
 
         # return said queue
         return self._target_queues[target]
+
+    def get_listener_queue(self, trigger) -> asyncio.Queue:
+        """
+        Getter method to retrieve a queue which contains
+        the pre-defined listeners.
+        :param trigger:
+        :return:
+        """
+        # does it already exist?
+        if trigger not in self._listener_queues.keys():
+            # you should have done that beforehand!
+            raise ReceiverException("listener queue was not defined in constructor")
+
+        # return said queue
+        return self._listener_queues[trigger]
 
     async def data_handler(self):
         """
