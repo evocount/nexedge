@@ -8,7 +8,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2018
 
 import asyncio
 import serial_asyncio
-
+from .pcip_commands import *
 
 async def read_queue(queue):
     """
@@ -30,7 +30,7 @@ async def read_channel(channel):
     while True:
 
         print("channel is free: {}".format(channel.free()))
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
 
 async def send_random(radio):
@@ -49,6 +49,23 @@ async def send_random(radio):
 
     loop = asyncio.get_event_loop()
     transmission = loop.create_task(radio.send_LDM(target_id=b"00006", payload=data_bytes))
+    while not transmission.done():
+        await asyncio.sleep(.1)
+    print(transmission.result())
+
+async def trigger_channel_status(radio):
+    """
+    Just send some encoded data to test most basic receiving.
+    :param radio:
+    :return:
+    """
+    import random
+    dt = random.randrange(start=5, stop=10)
+    print("waiting for {} seconds".format(dt))
+    await asyncio.sleep(dt)
+
+    loop = asyncio.get_event_loop()
+    transmission = loop.create_task(radio.write(channel_status_request()))
     while not transmission.done():
         await asyncio.sleep(.1)
     print(transmission.result())

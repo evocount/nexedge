@@ -6,7 +6,7 @@ def readme():
 
 
 setup(name='nexedge',
-      version='0.1b',
+      version='0.2',
       description='Kenwood Nexedge communication',
       url='https://gitlab.com/evocount/nexedge',
       author='Suthep Pomjaksilp',
@@ -14,8 +14,7 @@ setup(name='nexedge',
       license='proprietary',
       packages=['nexedge'],
       install_requires=[
-          'pyserial',
-          'requests'
+          'pyserial-asyncio',
       ],
 
       zip_safe=False)
