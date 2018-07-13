@@ -29,6 +29,7 @@ if __name__ == '__main__':
     # loop.create_task(read_channel(r.channel))
     # loop.create_task(r.receiver())
     # loop.create_task(send_random(r))
+    # loop.create_task(trigger_channel_status(r))
 
     # add listener for "about-me"
     c = RadioCommunicator(loop=loop,

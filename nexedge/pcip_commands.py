@@ -54,6 +54,14 @@ def set_repeat(repeat: bool=False):
     return wrap(b"k" + b"R" + settings[repeat])
 
 
+def channel_status_request():
+    """
+    Ask the receiver politely to report its channel status.
+    :return: command: bytes
+    """
+    return wrap(b"J" + b"C" + b"A")
+
+
 # Callfunctions
 def startcall() -> bytes:
     """
@@ -152,6 +160,7 @@ def setUnitStatus(unitID: bytes, status: bytes) -> bytes:
 
 
 # get status information
+# does not work
 def getChannelStatus() -> bytes:
     """
     Get the

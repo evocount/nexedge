@@ -12,7 +12,7 @@ import logging
 
 # local
 from .channel import ChannelStatus
-from .pcip_commands import set_baudrate, set_repeat, longMessage2Unit
+from .pcip_commands import set_baudrate, set_repeat, channel_status_request, longMessage2Unit
 from .utils import open_serial_connection
 
 # setup logging
@@ -248,7 +248,9 @@ class Radio:
         :return:
         """
         while not self.channel.free() or self._command_return is not None:
-            await asyncio.sleep(.05)
+            logger.debug("checking if channel is free")
+            await self.write(command=channel_status_request())
+            await asyncio.sleep(2)
 
         return await self.write(command)
 
