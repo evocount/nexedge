@@ -31,6 +31,11 @@ class VerificationError(ReceiverException):
 class SenderException(Exception):
     pass
 
+class PayloadTooLarge(SenderException):
+    """
+    The payload size exceeded the maximum send size.
+    """
+    pass
 
 class ChannelTimeout(SenderException):
     """

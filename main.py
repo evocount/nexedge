@@ -30,7 +30,13 @@ if __name__ == '__main__':
     # loop.create_task(r.receiver())
     # loop.create_task(send_random(r))
 
-    c = RadioCommunicator(loop=loop, serial_kwargs=serial_conf)
+    # add listener for "about-me"
+    c = RadioCommunicator(loop=loop,
+                          serial_kwargs=serial_conf,
+                          listeners=["about-me", "about-you"])
+
+    # start the handler
+    loop.create_task(c.data_handler())
     loop.create_task(send_via_com(c))
 
     loop.run_forever()
