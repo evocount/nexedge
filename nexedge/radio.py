@@ -14,6 +14,7 @@ import logging
 from .channel import ChannelStatus
 from .pcip_commands import set_baudrate, set_repeat, channel_status_request, longMessage2Unit
 from .utils import open_serial_connection
+from .exceptions import *
 
 # setup logging
 logger = logging.getLogger(__name__)
@@ -25,13 +26,13 @@ class Radio:
 
     MAXSIZE = 4000
 
-    _command_return = None
-
     def __init__(self,
                  loop,
                  serial_kwargs: dict,
                  change_baudrate: bool = False,
                  retry_sending: bool = True,
+                 confirmation_timeout: float = 60,
+                 channel_timeout: float = 60,
                  ):
         # get a logger
         logger.info("initialized Radio instance")
@@ -42,6 +43,10 @@ class Radio:
         # setting initial serial config
         self._serial_kwargs = serial_kwargs
 
+        # setting timeouts
+        self.confirmation_timeout = confirmation_timeout
+        self.channel_timeout = channel_timeout
+
         # queue setup
         # received data queue
         self.data_queue = asyncio.Queue()
@@ -50,6 +55,12 @@ class Radio:
 
         # channel status object
         self.channel = ChannelStatus()
+
+        # initialize command return
+        self._command_return = None
+
+        # only one writing is allowed at one
+        self.RADIO_LOCK = asyncio.Lock()
 
         # open serial connection
         # asyncio.ensure_future(self.open_connection())
@@ -232,14 +243,23 @@ class Radio:
         :param command:
         :return:
         """
-        self._command_return = asyncio.Future()
-        self._writer.write(command)
+        logger.debug("acquiring writing lock")
+        with (await self.RADIO_LOCK):
+            logger.debug("lock acquired")
+            self._command_return = asyncio.Future()
+            self._writer.write(command)
 
-        # result is either True or False
-        result = await self._command_return
-        logger.debug("write result {}".format(result))
-        self._command_return = None
-        return result
+            # result is either True or False
+            try:
+                result = await asyncio.wait_for(self._command_return,
+                                                self.confirmation_timeout)
+                logger.debug("write result {}".format(result))
+            except asyncio.TimeoutError:
+                logger.error("confirmation of write timed out")
+                raise ConfirmationTimeout
+            finally:
+                self._command_return = None
+            return result
 
     async def send(self, command):
         """
@@ -247,11 +267,21 @@ class Radio:
         :param command:
         :return:
         """
-        while not self.channel.free() or self._command_return is not None:
-            logger.debug("checking if channel is free")
-            await self.write(command=channel_status_request())
-            await asyncio.sleep(2)
+        if self._command_return is not None:
+            logger.debug("waiting for current command to end")
+            await self._command_return
 
+        logger.debug("checking if channel is free")
+        if not self.channel.free():
+            await self.write(command=channel_status_request())
+            logger.debug("waiting for channel to become free")
+            try:
+                await asyncio.wait_for(self.channel.wait_for_free(),
+                                       self.channel_timeout)
+            except TimeoutError:
+                raise ChannelTimeout
+
+        logger.debug("channel is free")
         return await self.write(command)
 
     async def send_LDM(self, target_id: bytes = None, payload: bytes = None):

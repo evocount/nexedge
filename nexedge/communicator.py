@@ -27,15 +27,12 @@ class RadioCommunicator:
     Radio communication with a target receiver.
     Provides data transmission queues for every called target
     """
-    _loop = None
-    _radio = None
-    _listener_queues = {}
-    _target_queues = {}
-    _counter = 0
 
     _packer = JSONPacker()
     _compressor = ZCompressor()
     _encoder = B64Encoder()
+
+    COM_LOCK = None
 
     def __init__(self,
                  loop,
@@ -43,7 +40,15 @@ class RadioCommunicator:
                  listeners=()):
         logger.info(f"initialized radio communicator {self}")
 
+        if RadioCommunicator.COM_LOCK is None:
+            RadioCommunicator.COM_LOCK = asyncio.Lock()
+
         self._loop = loop
+
+        # initialize queues and counter
+        self._listener_queues = {}
+        self._target_queues = {}
+        self._counter = 0
 
         # add the listener queues
         for trigger in listeners:
@@ -110,7 +115,9 @@ class RadioCommunicator:
             "target or data not set correctly"
         # increase transmission counter
         self._counter += 1
-        logger.info(f"sending some data to {target_id} with counter {self._counter}")
+        logger.info(
+            f"sending some data to {target_id} with counter {self._counter}"
+        )
 
         # add some meta data to our payload
         data = {
@@ -124,11 +131,15 @@ class RadioCommunicator:
 
         # now check size
         if len(encoded) > self._radio.MAXSIZE:
-            raise PayloadTooLarge(f"payload length {len(encoded)}>{self._radio.MAXSIZE}")
+            raise PayloadTooLarge(
+                f"payload length {len(encoded)}>{self._radio.MAXSIZE}"
+            )
 
         # actually sending something
-        t_result = await self._radio.send_LDM(target_id=target_id,
-                                              payload=encoded)
+        # actual sending is done in a lock
+        with (await RadioCommunicator.COM_LOCK):
+            t_result = await self._radio.send_LDM(target_id=target_id,
+                                                  payload=encoded)
 
         if t_result:
             logger.info(f"transmission {self._counter} succeed")
@@ -178,7 +189,9 @@ class RadioCommunicator:
         # does it already exist?
         if trigger not in self._listener_queues.keys():
             # you should have done that beforehand!
-            raise ReceiverException("listener queue was not defined in constructor")
+            raise ReceiverException(
+                "listener queue was not defined in constructor"
+            )
 
         # return said queue
         return self._listener_queues[trigger]
@@ -210,7 +223,9 @@ class RadioCommunicator:
                                                                data])
                     continue
                 except KeyError:
-                    logger.warning(f"encountered unknown trigger for listener {trigger}")
+                    logger.warning(
+                        f"encountered unknown trigger for listener {trigger}"
+                    )
                     continue
 
             # well there was no trigger, lets continue

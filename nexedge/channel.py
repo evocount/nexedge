@@ -7,6 +7,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2018
 """
 
 import time
+import asyncio
 import logging
 
 # logging setup
@@ -22,7 +23,7 @@ class ChannelStatus:
     # when did we receive a package for the last time
     _time_last_updated = 0
 
-    def __init__(self, free_threshold: int = 2):
+    def __init__(self, free_threshold: int = 4):
         """
         Initialize Object.
         Threshold sets the time in seconds in which the channel has to be clear before it is considered really free.
@@ -44,6 +45,16 @@ class ChannelStatus:
         """
         return self._channel_free and \
                (time.time() - self.free_threshold > self._time_unfree)
+
+    async def wait_for_free(self):
+        """
+        Returns when the channel is finally free.
+        :return:
+        """
+        while True:
+            if self.free():
+                return
+            await asyncio.sleep(.1)
 
     def set_free(self):
         logger.debug("setting channel free")
