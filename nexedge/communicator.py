@@ -82,6 +82,22 @@ class RadioCommunicator:
 
         return unpacked
 
+    def allowed_size_with_margin(self, data=None):
+        """
+        Check the size of the pickled data package.
+        :param data:
+        :return:
+        """
+        assert data is not None, "data has to be given"
+        # pickle data
+        encoded = self.pickle(data)
+
+        # now check size with padding for meta data
+        if len(encoded) > (self._radio.MAXSIZE * .8):
+            return False
+        else:
+            return True
+
     async def send(self, target_id: bytes = None, data=None, meta: dict={}):
         """
         Send the object data to the target receiver
