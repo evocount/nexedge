@@ -48,7 +48,7 @@ async def send_random(radio):
     data_bytes = data_str.encode()
 
     loop = asyncio.get_event_loop()
-    transmission = loop.create_task(radio.send_LDM(target_id=b"00006", payload=data_bytes))
+    transmission = loop.create_task(radio.send_LDM(target_id=b"00006", payload=data_bytes, meta={"trigger": "about-me"}))
     while not transmission.done():
         await asyncio.sleep(.1)
     print(transmission.result())

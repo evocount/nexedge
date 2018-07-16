@@ -37,7 +37,8 @@ class RadioCommunicator:
     def __init__(self,
                  loop,
                  serial_kwargs: dict,
-                 listeners=()):
+                 listeners=(),
+                 timeout: int = 20):
         logger.info(f"initialized radio communicator {self}")
 
         if RadioCommunicator.COM_LOCK is None:
@@ -58,7 +59,10 @@ class RadioCommunicator:
         logger.info("opening connection to radio")
         self._radio = Radio(loop=self._loop,
                             serial_kwargs=serial_kwargs,
-                            retry_sending=False)
+                            change_baudrate=False,
+                            retry_sending=False,
+                            confirmation_timeout=timeout,
+                            channel_timeout=timeout)
 
         # start the receiver
         self._loop.create_task(self._radio.receiver())
@@ -155,8 +159,9 @@ class RadioCommunicator:
                 )
 
                 await asyncio.sleep(dt)
-                t_result = await self._radio.send_LDM(target_id=target_id,
-                                                      payload=encoded)
+                with (await RadioCommunicator.COM_LOCK):
+                    t_result = await self._radio.send_LDM(target_id=target_id,
+                                                          payload=encoded)
                 if t_result:
                     return True
 
