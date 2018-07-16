@@ -38,7 +38,7 @@ class RadioCommunicator:
                  loop,
                  serial_kwargs: dict,
                  listeners=(),
-                 timeout: int = 20):
+                 timeout: int = 60):
         logger.info(f"initialized radio communicator {self}")
 
         if RadioCommunicator.COM_LOCK is None:

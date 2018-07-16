@@ -33,14 +33,14 @@ async def read_channel(channel):
         await asyncio.sleep(1)
 
 
-async def send_random(radio):
+async def send_random(radio, start=5):
     """
     Just send some encoded data to test most basic receiving.
     :param radio:
     :return:
     """
     import random
-    dt = random.randrange(start=5, stop=10)
+    dt = random.randrange(start=start, stop=(start+10))
     print("waiting for {} seconds".format(dt))
     await asyncio.sleep(dt)
 
@@ -48,7 +48,7 @@ async def send_random(radio):
     data_bytes = data_str.encode()
 
     loop = asyncio.get_event_loop()
-    transmission = loop.create_task(radio.send_LDM(target_id=b"00006", payload=data_bytes, meta={"trigger": "about-me"}))
+    transmission = loop.create_task(radio.send_LDM(target_id=b"00006", payload=data_bytes))
     while not transmission.done():
         await asyncio.sleep(.1)
     print(transmission.result())
@@ -71,7 +71,7 @@ async def trigger_channel_status(radio):
     print(transmission.result())
 
 
-async def send_via_com(com):
+async def send_via_com(com, start=5):
     """
     Just send some encoded data to test most basic receiving.
     :param com:
@@ -79,7 +79,7 @@ async def send_via_com(com):
     """
     import json
     import random
-    dt = random.randrange(start=5, stop=10)
+    dt = random.randrange(start=start, stop=(start+10))
     print("waiting for {} seconds".format(dt))
     await asyncio.sleep(dt)
 

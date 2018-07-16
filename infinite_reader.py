@@ -20,7 +20,7 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
 
     serial_conf = {
-        "url": '/dev/ttyUSB0',
+        "url": '/dev/ttyUSB1',
         "baudrate": 9600,
         #"baudrate": 57600,
     }
@@ -38,9 +38,9 @@ if __name__ == '__main__':
 
     # start the handler
     loop.create_task(c.data_handler())
-    dt_nom = 20
-    for s in range(0, 10):
-        loop.create_task(send_via_com(c, s*dt_nom))
+    # dt_nom = 20
+    # for s in range(1, 5):
+    #     loop.create_task(send_via_com(c, s*dt_nom))
 
     loop.run_forever()
     loop.close()
