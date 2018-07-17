@@ -126,7 +126,7 @@ class RadioCommunicator:
         # add some meta data to our payload
         data = {
             "counter":  self._counter,
-            **meta,
+            "meta":     meta,
             "payload":  data,
         }
 
@@ -142,31 +142,38 @@ class RadioCommunicator:
         # actually sending something
         # actual sending is done in a lock
         with (await RadioCommunicator.COM_LOCK):
-            t_result = await self._radio.send_LDM(target_id=target_id,
-                                                  payload=encoded)
+            try:
+                t_result = await self._radio.send_LDM(target_id=target_id,
+                                                      payload=encoded)
+            except ConfirmationTimeout:
+                t_result = False
 
         if t_result:
             logger.info(f"transmission {self._counter} succeed")
-            return True
         else:
-            # retry n times
-            n = 2
-            while n > 0:
-                dt = random.randrange(start=2000, stop=10000)
-                dt = dt / 1e3
-                logger.info(
-                    f"transmission {self._counter} failed, will retry in {dt}s"
-                )
+            logger.info(f"transmission {self._counter} failed")
+        return t_result
 
-                await asyncio.sleep(dt)
-                with (await RadioCommunicator.COM_LOCK):
-                    t_result = await self._radio.send_LDM(target_id=target_id,
-                                                          payload=encoded)
-                if t_result:
-                    return True
+        """
+        # retry n times
+        n = 2
+        while n > 0:
+            dt = random.randrange(start=2000, stop=10000)
+            dt = dt / 1e3
+            logger.info(
+                f"transmission {self._counter} failed, will retry in {dt}s"
+            )
 
-                n -= 1
-            raise SendMaxRetries
+            await asyncio.sleep(dt)
+            with (await RadioCommunicator.COM_LOCK):
+                t_result = await self._radio.send_LDM(target_id=target_id,
+                                                      payload=encoded)
+            if t_result:
+                return True
+
+            n -= 1
+        raise SendMaxRetries
+        """
 
     def get_target_queue(self, target: bytes = None) -> asyncio.Queue:
         """
@@ -237,4 +244,5 @@ class RadioCommunicator:
             queue = self.get_target_queue(target=remote_id)
 
             # put it into the data queue
+            logger.debug(f"putting data into {remote_id} queue")
             queue.put_nowait([remote_id, data])

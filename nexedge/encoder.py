@@ -47,4 +47,4 @@ class B64Encoder(Encoder):
 
     def decode(self, enc: bytes=None) -> bytes:
         assert type(enc) is bytes, "encoded data has to be given as bytes"
-        return base64.b16decode(enc)
+        return base64.b64decode(enc)

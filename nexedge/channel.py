@@ -23,19 +23,20 @@ class ChannelStatus:
     # when did we receive a package for the last time
     _time_last_updated = 0
 
-    def __init__(self, free_threshold: int = 4):
+    def __init__(self, free_threshold: int = 4, force_threshold: int = 20):
         """
         Initialize Object.
         Threshold sets the time in seconds in which the channel has to be clear before it is considered really free.
         :param free_threshold: int
         """
         self.free_threshold = free_threshold
+        self.force_threshold = force_threshold
 
     def update(self):
         """
         Update the time on this object.
         """
-        logger.debug("updating channel")
+        logger.debug("updating channel access time")
         self._time_last_updated = time.time()
 
     def free(self):
@@ -43,8 +44,15 @@ class ChannelStatus:
         True if channel is free (led off) and was free for the last self.free_threshold seconds (default = 2s).
         :return: bool
         """
-        return self._channel_free and \
-               (time.time() - self.free_threshold > self._time_unfree)
+        # first case, we get enough updates on the channel
+        # this means the channel is free and is was free for the last 4 seconds
+        status = self._channel_free and \
+                 (time.time() - self.free_threshold > self._time_unfree)
+
+        # sometimes the channel just does not get any status updates, in this
+        # case just assume free and force the message
+        force = time.time() - self.force_threshold > self._time_last_updated
+        return status or force
 
     async def wait_for_free(self):
         """
@@ -53,6 +61,7 @@ class ChannelStatus:
         """
         while True:
             if self.free():
+                logger.debug("wait_for_free terminates gracefully")
                 return
             await asyncio.sleep(.1)
 

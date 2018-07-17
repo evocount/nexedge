@@ -33,6 +33,33 @@ async def read_channel(channel):
         await asyncio.sleep(1)
 
 
+async def listen_listener_receiver(com, namespace):
+    """
+    Dummy routine to echo the received data queue.
+    :param queue:
+    :return:
+    """
+    while True:
+        queue = com.get_listener_queue(namespace)
+        remote_id, data = await queue.get()
+        print(f"{namespace} from {remote_id} {data['payload']}")
+
+
+async def listen_target_receiver(com, target):
+    """
+    Dummy routine to echo the received data queue.
+    :param queue:
+    :return:
+    """
+    n = 1
+    while True:
+        queue = com.get_target_queue(target=target)
+        remote_id, data = await queue.get()
+        print(f"from {remote_id} {data['payload']}")
+        print(f"received {n} packages")
+        n += 1
+
+
 async def send_random(radio, start=5):
     """
     Just send some encoded data to test most basic receiving.

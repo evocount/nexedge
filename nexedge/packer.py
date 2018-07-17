@@ -46,5 +46,4 @@ class JSONPacker(Packer):
 
     def unpack(self, message: bytes = None):
         assert type(message) is bytes, "message has to be given as bytes"
-        ser = json.loads(message)
-        return json.loads(ser)
+        return json.loads(message)

@@ -7,6 +7,7 @@ Suthep Pomjaksilp <sp@laz0r.de> 2018
 """
 
 import logging
+import logging.config
 import asyncio
 import json
 
@@ -14,7 +15,26 @@ from nexedge import *
 
 if __name__ == '__main__':
     # logging
-    logging.basicConfig(level=logging.DEBUG)
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {
+                'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+            },
+        },
+        'handlers': {
+            'default': {
+                'level': logging.DEBUG,
+                'formatter': 'standard',
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'root': {
+            'handlers': ['default'],
+            'level': logging.DEBUG,
+        }
+    })
 
     # async loop
     loop = asyncio.get_event_loop()
@@ -38,6 +58,8 @@ if __name__ == '__main__':
 
     # start the handler
     loop.create_task(c.data_handler())
+    loop.create_task(listen_listener_receiver(c, "about-you"))
+    loop.create_task(listen_target_receiver(c, b"00002"))
     # dt_nom = 20
     # for s in range(1, 5):
     #     loop.create_task(send_via_com(c, s*dt_nom))
