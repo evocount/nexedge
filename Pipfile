@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 pyserial-asyncio = "*"
-six = "*"
 pyserial = "*"
 
 [dev-packages]
