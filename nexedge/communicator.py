@@ -44,7 +44,7 @@ class RadioCommunicator:
         if RadioCommunicator.COM_LOCK is None:
             RadioCommunicator.COM_LOCK = asyncio.Lock()
 
-        self._loop = loop
+        self._loop = asyncio.get_event_loop()
 
         # initialize queues and counter
         self._listener_queues = {}

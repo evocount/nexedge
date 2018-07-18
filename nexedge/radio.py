@@ -41,7 +41,7 @@ class Radio:
         logger.info("initialized Radio instance")
 
         # setting loop
-        self.loop = loop
+        self.loop = asyncio.get_event_loop()cd 
 
         # setting initial serial config
         self._serial_kwargs = serial_kwargs
