@@ -99,7 +99,9 @@ class RadioCommunicator:
         """
         assert data is not None, "data has to be given"
         # pickle data
-        encoded = self.pickle(data)
+        # pack data into dummy dict
+        data_dict = {"dummy": data}
+        encoded = self.pickle(data_dict)
 
         # now check size with padding for meta data
         if len(encoded) > (self._radio.MAXSIZE * .8):
