@@ -41,7 +41,7 @@ class ZCompressor(Compressor):
 
     def compress(self, data: bytes=None):
         assert type(data) is bytes, "data has to be given as bytes"
-        return zlib.compress(data)
+        return zlib.compress(data, level=9)
 
     def decompress(self, comp: bytes=None):
         assert type(comp) is bytes, "compressed data has to be given as bytes"
