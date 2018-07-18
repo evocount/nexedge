@@ -284,7 +284,9 @@ class Radio:
             await self._command_return
 
         logger.debug("acquiring writing lock")
-        with (await self.RADIO_LOCK):
+        # temporary removing lock
+        # with (await self.RADIO_LOCK):
+        if True:
             logger.debug("lock acquired")
             logger.debug("checking if channel is free")
             if not self.channel.free():
