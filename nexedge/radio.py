@@ -285,8 +285,8 @@ class Radio:
 
         logger.debug("acquiring writing lock")
         # temporary removing lock
-        # with (await self.RADIO_LOCK):
-        if True:
+        with (await self.RADIO_LOCK):
+            # if True:
             logger.debug("lock acquired")
             logger.debug("checking if channel is free")
             if not self.channel.free():
