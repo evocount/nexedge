@@ -318,7 +318,7 @@ class Radio:
         assert (target_id is not None) and (payload is not None),\
             "target and payload have to be set!"
 
-        logger.debug("sending LDM with payload length {} to {}".format(len(payload), target_id))
+        logger.info("sending LDM with payload length {} to {}".format(len(payload), target_id))
         if len(payload) > self.MAXSIZE:
             raise PayloadTooLarge
 
