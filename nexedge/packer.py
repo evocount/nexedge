@@ -24,10 +24,10 @@ class Packer:
         """
         nothing to do here
         """
-        logger.debug("initialized Packer {}".format(repr(self)))
+        logger.debug(f"initialized Packer {repr(self)}")
         pass
 
-    def pack(self, data = None) -> bytes:
+    def pack(self, data=None) -> bytes:
         raise NotImplementedError
 
     def unpack(self, message: bytes = None):

@@ -127,7 +127,7 @@ class Radio:
             # read until the message is over
             # this is the blocking call
             buffer = await self._reader.readuntil(self.STOP)
-            # logger.debug("dumping buffer {}".format(buffer))
+            # logger.debug(f"dumping buffer {buffer}")
 
             # split buffer by stop byte bc it is still there
             # see docs for stream classes in asyncio
@@ -140,32 +140,32 @@ class Radio:
             try:
                 # SDM
                 if message[0] == b'g'[0] and message[1] == b'F'[0]:
-                    logger.debug("got SDM {}".format(message))
+                    logger.debug(f"got SDM {message}")
                     self.channel.update()
                     self.process_message(message)
 
                 # LDM
                 elif message[0] == b'g'[0] and message[1] == b'G'[0]:
-                    logger.debug("got LDM {}".format(message))
+                    logger.debug(f"got LDM {message}")
                     self.channel.update()
                     self.process_message(message)
 
                 # StatusMessage
                 elif message[0] == b'g'[0] and message[1] == b'E'[0]:
-                    logger.debug("got status {}".format(message))
+                    logger.debug(f"got status {message}")
                     self.channel.update()
                     self.process_status(message)
                     pass
 
                 # Device status
                 elif message[0] == b'J'[0] and message[1] == b'A'[0]:
-                    logger.debug("got device status {}".format(message))
+                    logger.debug(f"got device status {message}")
                     self.channel.update()
                     self.process_device(message)
 
                 # DisplayContent
                 elif message[0] == b'J'[0] and message[1] == b'E'[0]:
-                    logger.debug("got display content {}".format(message))
+                    logger.debug(f"got display content {message}")
                     pass
 
                 # transmission success
@@ -192,14 +192,15 @@ class Radio:
 
     def process_message(self, message: bytes):
         """
-        Processes long and short messages send directly to the unit (SDM and LDM).
+        Processes long and short messages send directly
+        to the unit (SDM and LDM).
         :param message: bytes
         :return: test: bytes
         """
         sender = message[3:8]  # extract sender ID
         text = message[14:]  # extract message
-        logger.debug("Sender-ID: {}".format(sender))
-        logger.debug("Message: {}".format(text))
+        logger.debug(f"Sender-ID: {sender}")
+        logger.debug(f"Message: {text}")
         self.data_queue.put_nowait([sender, text])
 
     def process_status(self, message: bytes):
@@ -210,15 +211,18 @@ class Radio:
         """
         sender = message[3:8]
         status = message[14:]
-        logger.debug("Sender-ID: {}".format(sender))
-        logger.debug("Status: {}".format(status))
+        logger.debug(f"Sender-ID: {sender}")
+        logger.debug(f"Status: {status}")
         self.status_queue.put([sender, status])
 
     def process_device(self, message: bytes):
         """
-        We want to now if the channel is free, this is indicated by the state of the front led of the device.
-        messages is in bytes format and the information is encoded in the last byte.
-        See https://gitlab.com/evocount/nexedge/wikis/transceiver_status for further info.
+        We want to now if the channel is free, this is indicated by the state
+        of the front led of the device.
+        messages is in bytes format and the information is encoded in the
+        last byte.
+        See https://gitlab.com/evocount/nexedge/wikis/transceiver_status
+        for further info.
         :param message: bytes
         :return: : str
         """
@@ -257,7 +261,7 @@ class Radio:
             try:
                 result = await asyncio.wait_for(self._command_return,
                                                 self.confirmation_timeout)
-                logger.debug("write result {}".format(result))
+                logger.debug(f"write result {result}")
             except TimeoutError:
                 logger.error("confirmation of write timed out")
                 raise ConfirmationTimeout
@@ -318,7 +322,9 @@ class Radio:
         assert (target_id is not None) and (payload is not None),\
             "target and payload have to be set!"
 
-        logger.info("sending LDM with payload length {} to {}".format(len(payload), target_id))
+        logger.info(
+            f"sending LDM with payload length {len(payload)} to {target_id}"
+        )
         if len(payload) > self.MAXSIZE:
             raise PayloadTooLarge
 

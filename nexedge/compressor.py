@@ -24,7 +24,7 @@ class Compressor:
         """
         nothing to do here
         """
-        logger.debug("initialized Encoder {}".format(repr(self)))
+        logger.debug(f"initialized Encoder {repr(self)}")
         pass
 
     def compress(self, data: bytes=None) -> bytes:
