@@ -28,7 +28,7 @@ Interfacing the transceivers is possible via a serial interface at the back of t
 The RS232 is carried via a D-SUB25 connector.
 In most cases a D-SUB9 to 25 serial modem cable is necessary since the device features a female connector.
 By default the serial configuration is the following:
-```angular2html
+```python
 import serial
 
 baudrate = 9600
@@ -38,22 +38,22 @@ bytesize = serial.EIGHTBITS
 ```
 
 The data which is available via serial is encapsulated in packages with a start and s stop byte:
-```angular2html
+```python
 \x02 SEQ DATA \x03
 ```
 `SEQ` is an identifier for the type of package (display message, status message, LDM, SDM).
 
 Controlling of the device is possible in the same way by constructing a command:
-```angular2html
+```python
 \x02 gGU 00002 helloWorld \x03
 ```
 In this case `b'gGU'` is the command for a LDM and `b'00002'` is the target transceiver.
 Every command is followed by a ACK signal:
-```angular2html
+```python
 \x02 1 \x03
 ```
 or in the failing case:
-```angular2html
+```python
 \x02 0 \x03
 ```
 As transmissions can take up to 40s the ACK can be delayed by quite some time.
@@ -63,7 +63,7 @@ When using you should only ever use this class.
 The communicator provides provides a high-level interface to send and receive data via radio.
 
 Example usage as in `pdm/radio_mixin.py`:
-```angular2html
+```python
 loop = asyncio.get_event_loop()
 
 com = RadioCommunicator(serial_kwargs=
@@ -78,7 +78,7 @@ loop.create_task(com.data_handler())
 
 ### Sending a payload with `nexedge.RadioCommunicator.send()`
 Imagine you (transceiver b"00001") want to send the payload
-```angular2html
+```python
 p = {
     "name":     "dog",
     "tail":     True,
@@ -88,7 +88,7 @@ p = {
 to the target transceiver `b"00002"`.
 
 Example with `com` from the above section:
-```angular2html
+```python
 result = await com.send(target_id=b"00002",
                        data=p,
                        meta={})
@@ -99,7 +99,7 @@ The return value of this command is either `True` or `False` as indicated by the
 If no ACK at all is received during `timeout` => `ConfirmationTimeout` is raised.
 
 Under the hood the data is placed into a dictionary:
-```angular2html
+```python
 # add some meta data to our payload
 data = {
     "counter":  self._counter,
@@ -115,7 +115,7 @@ This queue consists of tuples `(target_id, data)` of data which is received from
 Note that every transceiver has a unique queue!
 
 To receive the data from `b"00001"` (above section), you have to acquire the queue:
-```angular2html
+```python
 queue = com.get_target_queue(target=`b"00001"`)
 remote_id, data = await queue.get()
 print(data["payload"])
@@ -140,14 +140,14 @@ To retrieve such data, we have to listen for a `trigger`.
 During initialization of the communicator a list of listeners can be given `listeners=["about-me"]`.
 This sets up a separate `listener_queue` for this trigger.
 To receive data the only thing we have to do is to get from this queue:
-```angular2html
+```python
 queue = com.get_listener_queue("about-me")
 remote_id, data = await queue.get()
 ```
 
 As indicated beforehand the metadata of a transmission can be used to get transmit addition information.
 The trigger is just a special metadata keyword:
-```angular2html
+```python
 com.send(receiver=b"00002",
          data=self.model.configuration,
          meta={"trigger": "about-me"})
