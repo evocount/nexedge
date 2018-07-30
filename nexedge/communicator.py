@@ -143,7 +143,7 @@ class RadioCommunicator:
 
         # actually sending something
         # actual sending is done in a lock
-        with (await RadioCommunicator.COM_LOCK):
+        async with RadioCommunicator.COM_LOCK:
             # if True:
             try:
                 t_result = await self._radio.send_LDM(target_id=target_id,
