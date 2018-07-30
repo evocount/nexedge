@@ -56,8 +56,7 @@ class RadioCommunicator:
             self._listener_queues[trigger] = asyncio.Queue()
 
         logger.info("opening connection to radio")
-        self._radio = Radio(loop=self._loop,
-                            serial_kwargs=serial_kwargs,
+        self._radio = Radio(serial_kwargs=serial_kwargs,
                             change_baudrate=False,
                             retry_sending=False,
                             confirmation_timeout=timeout,
