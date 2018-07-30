@@ -141,7 +141,7 @@ During initialization of the communicator a list of listeners can be given `list
 This sets up a separate `listener_queue` for this trigger.
 To receive data the only thing we have to do is to get from this queue:
 ```angular2html
-queue = self.COM.get_listener_queue("about-me")
+queue = com.get_listener_queue("about-me")
 remote_id, data = await queue.get()
 ```
 
