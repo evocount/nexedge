@@ -35,7 +35,6 @@ class RadioCommunicator:
     COM_LOCK = None
 
     def __init__(self,
-                 loop,
                  serial_kwargs: dict,
                  listeners=(),
                  timeout: int = 60):

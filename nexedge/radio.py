@@ -30,7 +30,6 @@ class Radio:
     MAXSIZE = 4000
 
     def __init__(self,
-                 loop,
                  serial_kwargs: dict,
                  change_baudrate: bool = False,
                  retry_sending: bool = True,
@@ -41,7 +40,7 @@ class Radio:
         logger.info("initialized Radio instance")
 
         # setting loop
-        self.loop = asyncio.get_event_loop()
+        self._loop = asyncio.get_event_loop()
 
         # setting initial serial config
         self._serial_kwargs = serial_kwargs
@@ -67,13 +66,13 @@ class Radio:
 
         # open serial connection
         # asyncio.ensure_future(self.open_connection())
-        self.loop.create_task(self.open_connection(change_baudrate, retry_sending))
+        self._loop.create_task(self.open_connection(change_baudrate, retry_sending))
 
     async def open_connection(self, change_baudrate, retry):
         # open the serial connection as reader/writer pair
         logger.debug("setting up reader/writer pair")
         self._transport, self._reader, self._writer = await open_serial_connection(
-                loop=self.loop, **self._serial_kwargs)
+                loop=self._loop, **self._serial_kwargs)
 
         # manipulate Serial object via transport
         self._transport.serial.parity = serial.PARITY_NONE

@@ -52,8 +52,7 @@ if __name__ == '__main__':
     # loop.create_task(trigger_channel_status(r))
 
     # add listener for "about-me"
-    c = RadioCommunicator(loop=loop,
-                          serial_kwargs=serial_conf,
+    c = RadioCommunicator(serial_kwargs=serial_conf,
                           listeners=["about-me", "about-you"])
 
     # start the handler
