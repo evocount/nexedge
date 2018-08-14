@@ -8,3 +8,5 @@ pyserial-asyncio = "*"
 pyserial = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-asyncio = "*"
