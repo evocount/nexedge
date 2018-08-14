@@ -158,3 +158,7 @@ ENV/
 /site
 
 # End of https://www.gitignore.io/api/linux,python
+
+
+# pytest
+.pytest_cache/
