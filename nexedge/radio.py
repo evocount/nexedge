@@ -71,8 +71,13 @@ class Radio:
     async def open_connection(self, change_baudrate, retry):
         # open the serial connection as reader/writer pair
         logger.debug("setting up reader/writer pair")
-        self._transport, self._reader, self._writer = await open_serial_connection(
-                loop=self._loop, **self._serial_kwargs)
+        try:
+            self._transport, self._reader, self._writer = await open_serial_connection(
+                    loop=self._loop, **self._serial_kwargs)
+        except serial.SerialException as e:
+            logger.exception(
+                f"could not open serial port {self._serial_kwargs['url']}")
+            raise e
 
         # manipulate Serial object via transport
         self._transport.serial.parity = serial.PARITY_NONE
@@ -98,6 +103,7 @@ class Radio:
         #         logger.info("retry disabled")
         #     else:
         #         logger.info("retry still unchanged")
+
 
     async def _increase_baudrate(self):
         """
