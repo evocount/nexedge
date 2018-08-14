@@ -1,0 +1,9 @@
+image: python:3.6
+
+test:
+  script:
+  - apt-get update -qy
+  - apt-get install -y python-dev python-pip git
+  - pip install pipenv
+  - pipenv install --dev
+  - pipenv run pytest --cov nexedge
