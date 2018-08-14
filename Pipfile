@@ -10,3 +10,5 @@ pyserial = "*"
 [dev-packages]
 pytest = "*"
 pytest-asyncio = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
