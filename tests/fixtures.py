@@ -13,44 +13,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DummyRadio(Radio):
-    """
-    A dummy version of the radio class.
-    This version does not execute open_connection
-    (compare with Radio().__init__()).
-    """
-    def __init__(self):
-        # get a logger
-        logger.info("initialized Dummy Radio instance")
+RADIO_KWARGS = dict(change_baudrate=False,
+                    retry_sending=False,
+                    confirmation_timeout=60,
+                    channel_timeout=60)
 
-        # setting loop
-        self._loop = asyncio.get_event_loop()
+SERIAL_KWARGS = dict(url="loop://",
+                     baudrate=9600)
 
-        # setting initial serial config
-        self._serial_kwargs = {
-            "url": 'loop://',
-            "baudrate": 9600,
-            }
-
-        # setting timeouts
-        self.confirmation_timeout = 60
-        self.channel_timeout = 60
-
-        # queue setup
-        # received data queue
-        self.data_queue = asyncio.Queue()
-        # received status messages
-        self.status_queue = asyncio.Queue()
-
-        # channel status object
-        self.channel = ChannelStatus()
-
-        # initialize command return
-        self._command_return = None
-
-        # only one writing is allowed at one
-        self.RADIO_LOCK = asyncio.Lock()
-
+SERIAL_KWARGS_FAIL = dict(url="/dev/ttyFAIL",
+                          baudrate=9600)
 
 @pytest.fixture
 def radio():
@@ -58,18 +30,13 @@ def radio():
     Fixture for an existing radio device (loop device).
     :return:
     """
-    return DummyRadio()
+    return Radio(serial_kwargs=SERIAL_KWARGS, **RADIO_KWARGS)
 
 
 @pytest.fixture
 def no_radio():
     """
-    Fixture for a missing radio device (/dev/ttyUSB2).
+    Fixture for a missing radio device (/dev/ttyFAIL).
     :return:
     """
-    radio = DummyRadio()
-    radio._serial_kwargs = {
-        "url": '/dev/ttyFAIL',
-        "baudrate": 9600,
-    }
-    return radio
+    return Radio(serial_kwargs=SERIAL_KWARGS_FAIL, **RADIO_KWARGS)
