@@ -43,12 +43,13 @@ class RadioCommunicator:
         if RadioCommunicator.COM_LOCK is None:
             RadioCommunicator.COM_LOCK = asyncio.Lock()
 
-        self._loop = asyncio.get_event_loop()
-
         # initialize queues and counter
         self._listener_queues = {}
         self._target_queues = {}
         self._counter = 0
+
+        # initialize data_handler as None
+        self._data_handler = None
 
         # add the listener queues
         for trigger in listeners:
@@ -62,8 +63,44 @@ class RadioCommunicator:
                             confirmation_timeout=timeout,
                             channel_timeout=timeout)
 
-        # start the receiver
-        self._loop.create_task(self._radio.receiver())
+        # open the serial connection
+        self._radio.start_connection_handler()
+
+        # start the receiver loop
+        self._radio.start_receiver_handler()
+
+        # start the state checker
+        self._radio_state_handler =\
+            asyncio.get_event_loop().create_task(self.radio_state_handler())
+
+        # flag
+        self.is_destroyed = asyncio.Future()
+
+    def destroy(self):
+        """
+        Cancel all ongoing loops.
+        :return:
+        """
+        for task in [self._data_handler]:
+            if task is not None:
+                logger.info(f"cancelling task {task}")
+                task.cancel()
+
+        # set flag
+        self.is_destroyed.set_result(True)
+
+        # if radio is already cancelled, this does nothing
+        self._radio.destroy()
+
+    async def radio_state_handler(self):
+        """
+        Wait untill the radio is destroyed.
+        :return:
+        """
+        await self._radio.is_destroyed
+        logger.debug("radio set destroyed flag")
+        self.destroy()
+        return
 
     def pickle(self, data):
         """
@@ -117,6 +154,12 @@ class RadioCommunicator:
         """
         assert type(target_id) is bytes and data is not None,\
             "target or data not set correctly"
+
+        # check if backend is still running
+        if self.is_destroyed.done():
+            logger.exception("aborting send because backend was stopped")
+            raise SenderException
+
         # increase transmission counter
         self._counter += 1
         logger.info(
@@ -208,6 +251,18 @@ class RadioCommunicator:
 
         # return said queue
         return self._listener_queues[trigger]
+
+    def start_data_handler(self):
+        """
+        Returns data_handler or starts it.
+        :return:
+        """
+        if self._data_handler is None:
+            loop = asyncio.get_event_loop()
+            self._data_handler = loop.create_task(
+                self.data_handler())
+
+        return self._data_handler
 
     async def data_handler(self):
         """

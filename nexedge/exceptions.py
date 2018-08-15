@@ -6,30 +6,36 @@ Proprietary and confidential
 Suthep Pomjaksilp <sp@laz0r.de> 2017
 """
 
-# this file defines all Exceptions used
+
+# radio device exceptions
+
+class RadioException(Exception):
+    pass
+
+
+class DeviceNotFound(RadioException):
+    """
+    The radio device under the given address was not found or otherwise unable
+    to connect.
+    """
+    pass
+
 
 # receiver Exceptions
-class ReceiverException(Exception):
+class ReceiverException(RadioException):
     pass
 
 
-class ReceiveTimeout(ReceiverException):
+class ListenerNotDefined(ReceiverException):
     """
-    The unifier thread received to messages in the answer_queue.
+    The listener queue was not defined.
     """
-    pass
-
-
-class VerificationError(ReceiverException):
-    """
-    The received checksum does not match the generated checksum of the received data.
-    """
-    pass
 
 
 # sender exceptions
-class SenderException(Exception):
+class SenderException(RadioException):
     pass
+
 
 class PayloadTooLarge(SenderException):
     """
@@ -37,9 +43,11 @@ class PayloadTooLarge(SenderException):
     """
     pass
 
+
 class ChannelTimeout(SenderException):
     """
-    The channel timed out during send, this means, that the channel was not free for a set duration that exceeded
+    The channel timed out during send, this means, that the channel was
+    not free for a set duration that exceeded
     the limit.
     """
     pass
@@ -47,7 +55,8 @@ class ChannelTimeout(SenderException):
 
 class ConfirmationTimeout(SenderException):
     """
-    The confirmation message for a command was not received in a given frame of time.
+    The confirmation message for a command was not received in a given
+    frame of time.
     """
     pass
 

@@ -44,6 +44,8 @@ class Radio:
 
         # setting initial serial config
         self._serial_kwargs = serial_kwargs
+        self._retry_sending = retry_sending
+        self._change_baudrate = change_baudrate
 
         # setting timeouts
         self.confirmation_timeout = confirmation_timeout
@@ -64,28 +66,70 @@ class Radio:
         # only one writing is allowed at one
         self.RADIO_LOCK = asyncio.Lock()
 
-        # open serial connection
-        # asyncio.ensure_future(self.open_connection())
-        self._loop.create_task(self.open_connection(change_baudrate, retry_sending))
+        # initialize receiver loop and connection handler as None
+        self._receiver = None
+        self._con_handler = None
 
-    async def open_connection(self, change_baudrate, retry):
+        # initialize reader/writer pair as None
+        self._reader = None
+        self._writer = None
+        self._transport = None
+
+        # indicator for cancelling
+        self.is_destroyed = asyncio.Future()
+
+    def destroy(self):
+        """
+        Cancel all ongoing loops.
+        :return:
+        """
+        for task in [self._con_handler, self._receiver]:
+            if task is not None:
+                logger.info(f"cancelling task {task}")
+                task.cancel()
+        self.is_destroyed.set_result(True)
+
+        return None
+
+    def start_connection_handler(self):
+        """
+        Returns open_connection or starts it.
+        :return:
+        """
+        if self._con_handler is None:
+            loop = asyncio.get_event_loop()
+            self._con_handler = loop.create_task(
+                self.open_connection())
+
+        return self._con_handler
+
+    async def open_connection(self):
         # open the serial connection as reader/writer pair
         logger.debug("setting up reader/writer pair")
         try:
-            self._transport, self._reader, self._writer = await open_serial_connection(
-                    loop=self._loop, **self._serial_kwargs)
+            loop = asyncio.get_event_loop()
+            transport, reader, writer = await open_serial_connection(
+                    loop=loop, **self._serial_kwargs)
         except serial.SerialException as e:
             logger.exception(
-                f"could not open serial port {self._serial_kwargs['url']}")
-            raise e
+                f"opening serial port {self._serial_kwargs['url']}"
+                f" failed witdh {repr(e)}")
+            self.destroy()
+            raise DeviceNotFound(
+                f"could not open {self._serial_kwargs['url']}")
 
         # manipulate Serial object via transport
-        self._transport.serial.parity = serial.PARITY_NONE
-        self._transport.serial.stopbits = serial.STOPBITS_TWO
-        self._transport.serial.bytesize = serial.EIGHTBITS
+        transport.serial.parity = serial.PARITY_NONE
+        transport.serial.stopbits = serial.STOPBITS_TWO
+        transport.serial.bytesize = serial.EIGHTBITS
+
+        # now write everything to instance variables
+        self._reader = reader
+        self._writer = writer
+        self._transport = transport
 
         # change baud rate
-        if change_baudrate:
+        if self._change_baudrate:
             logger.info("try increasing baud rate to 57600")
             success = await self._increase_baudrate()
             if success:
@@ -96,7 +140,7 @@ class Radio:
 
         # disable air retries
         # should not be changed atm since I do not know why it is failing
-        # if not retry:
+        # if not self._retry:
         #     logger.info("disabling repeated sending")
         #     success = await self._disable_retry()
         #     if success:
@@ -104,13 +148,11 @@ class Radio:
         #     else:
         #         logger.info("retry still unchanged")
 
-
     async def _increase_baudrate(self):
         """
         Increase the serial baudrate to maximum of 57600
         """
         return await self.write(set_baudrate(baud=57600))
-
 
     async def _disable_retry(self):
         """
@@ -118,6 +160,7 @@ class Radio:
         """
         return await self.write(set_repeat(True))
 
+    @property
     def maxsize(self):
         """
         Return max package size.
@@ -125,14 +168,35 @@ class Radio:
         """
         return self.MAXSIZE
 
+    def start_receiver_handler(self):
+        """
+        Return the receiver coroutine or start if not already started.
+        :return:
+        """
+        if self._receiver is None:
+            loop = asyncio.get_event_loop()
+            self._receiver = loop.create_task(self.receiver())
+
+        return self._receiver
+
     async def receiver(self):
         logger.info("starting receiver loop")
         while True:
+            if self._reader is None:
+                logger.warning(f"connection is not ready, sleeping for 5s")
+                await asyncio.sleep(5)
+                continue
+
             logger.debug("waiting for the next message")
             # read until the message is over
             # this is the blocking call
-            buffer = await self._reader.readuntil(self.STOP)
-            # logger.debug(f"dumping buffer {buffer}")
+            try:
+                buffer = await self._reader.readuntil(self.STOP)
+                # logger.debug(f"dumping buffer {buffer}")
+            except serial.serialutil.SerialException:
+                logger.exception(f"could not access serial port during reading")
+                self.destroy()
+                raise DeviceNotFound
 
             # split buffer by stop byte bc it is still there
             # see docs for stream classes in asyncio
@@ -257,7 +321,14 @@ class Radio:
         :return:
         """
         self._command_return = asyncio.Future() if await_response else None
-        self._writer.write(command)
+        try:
+            self._writer.write(command)
+        except serial.serialutil.SerialException as e:
+            logger.exception(f"could not access serial port during writing"
+                             f"{repr(e)}")
+            self.destroy()
+            raise DeviceNotFound
+
         logger.debug("actual writing to serial finished")
 
         # default is to wait for a response

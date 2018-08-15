@@ -53,11 +53,12 @@ if __name__ == '__main__':
 
     # add listener for "about-me"
     c = RadioCommunicator(serial_kwargs=serial_conf,
-                          listeners=["about-me", "about-you"])
+                          listeners=["about-me", "about-you"],
+                          timeout=30)
 
     # start the handler
-    loop.create_task(c.data_handler())
-    dt_nom = 10
+    c.start_data_handler()
+    dt_nom = 5
     for s in range(0, 10):
         loop.create_task(send_via_com(c, b"00006", s*dt_nom+10))
     # loop.create_task(send_via_com(c, 0))
