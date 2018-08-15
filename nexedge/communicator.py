@@ -158,7 +158,7 @@ class RadioCommunicator:
         # check if backend is still running
         if self.is_destroyed.done():
             logger.exception("aborting send because backend was stopped")
-            raise SenderException
+            raise DeviceNotFound
 
         # increase transmission counter
         self._counter += 1

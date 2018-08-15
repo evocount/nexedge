@@ -116,10 +116,10 @@ async def send_via_com(com, target=b"00006", start=5):
 
     try:
         transmission = await com.send(target_id=target, data=data)
-    except SenderException:
+        print(transmission)
+    except DeviceNotFound:
         print("aborted")
         return
-    print(transmission)
 
 
 # this is basically a copy from the pyserial_async source, but we need to get
