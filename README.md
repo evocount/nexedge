@@ -1,5 +1,5 @@
 # EvoCount nexedge radio communication
-This module enables the Polling Device Manager to communicate via a radio link using Kenwood Nexedge devices.
+This module provides high level data transmission via radio link using Kenwood Nexedge devices.
 
 ## Prerequisites
 The following things are needed.
@@ -8,7 +8,7 @@ The following things are needed.
 * hardware serial device or RS232 dongle, the executing user has to have writing permission
 
 ## Installation
-* git clone `git@gitlab.com:evocount/nexedge.git`
+* git clone `git@github.com:evocount/nexedge.git`
 * `cd nexedge && pipenv install`
 
 ## Transmitting and receiving data
@@ -62,7 +62,7 @@ As transmissions can take up to 40s the ACK can be delayed by quite some time.
 When using you should only ever use this class.
 The communicator provides provides a high-level interface to send and receive data via radio.
 
-Example usage as in `pdm/radio_mixin.py`:
+Example usage:
 ```python
 loop = asyncio.get_event_loop()
 
