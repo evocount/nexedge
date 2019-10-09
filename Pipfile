@@ -4,8 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pyserial-asyncio = "*"
-pyserial = "*"
+nexedge = {editable = true,path = "."}
 
 [dev-packages]
 pytest = "*"
