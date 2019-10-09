@@ -159,3 +159,7 @@ As a result the user has to make sure only one radio is talking at a time.
 * a considerable amount of time is spent to wait until the radio channel is considered free again. If the channel is not updated for 10s, it is considered free and the transmission starts.
 * `nexedge` does not do any retries of sending.
 * transmissions can take up to 40s when sending 4000 bytes. To counter this, every data is serialized with json, compressed with zlib and encoded in base64. With this method up to 220 log events can be transmitted in one package.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE.md).

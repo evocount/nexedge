@@ -11,7 +11,7 @@ setup(name='nexedge',
       url='https://github.com/evocount/nexedge',
       author='Suthep Pomjaksilp',
       author_email='sp@laz0r.de',
-      license='proprietary',
+      license='MIT',
       packages=['nexedge'],
       install_requires=[
           'pyserial-asyncio',

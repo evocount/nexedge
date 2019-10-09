@@ -1,11 +1,3 @@
-"""
-Copyright (C) EvoCount UG - All Rights Reserved
-Unauthorized copying of this file, via any medium is strictly prohibited
-Proprietary and confidential
-
-Suthep Pomjaksilp <sp@laz0r.de> 2017-2018
-"""
-
 
 # base method to wrap the command into start and end bytes
 def wrap(command: bytes):
@@ -66,7 +58,7 @@ def channel_status_request():
 def startcall() -> bytes:
     """
     Starting a voice call
-    :return: 
+    :return:
     """
     return wrap(b"A")
 
@@ -74,7 +66,7 @@ def startcall() -> bytes:
 def endcall() -> bytes:
     """
     Ending a voice call
-    :return: 
+    :return:
     """
     return wrap(b"C")
 
@@ -83,9 +75,9 @@ def endcall() -> bytes:
 def shortGroupMessage(groupID: bytes, message: bytes) -> bytes:
     """
     Short group message (will be displayed on the unit)
-    :param groupID: 
-    :param message: 
-    :return: 
+    :param groupID:
+    :param message:
+    :return:
     """
     return wrap(b"g" + b"F" + b"G" + groupID + message)
 
@@ -93,8 +85,8 @@ def shortGroupMessage(groupID: bytes, message: bytes) -> bytes:
 def shortMessage2all(message: bytes):
     """
     Short message to all units (will be displayed on the unit)
-    :param message: 
-    :return: 
+    :param message:
+    :return:
     """
     return wrap(b"g" + b"F" + b"G" + b"00000" + message)
 
@@ -102,9 +94,9 @@ def shortMessage2all(message: bytes):
 def shortMessage2Unit(unitID: bytes, message: bytes) -> bytes:
     """
     Short message to one unit (will be displayed on the unit)
-    :param unitID: 
-    :param message: 
-    :return: 
+    :param unitID:
+    :param message:
+    :return:
     """
     return wrap(b"g" + b"F" + b"U" + unitID + message)
 
@@ -112,9 +104,9 @@ def shortMessage2Unit(unitID: bytes, message: bytes) -> bytes:
 def longGroupMessage(groupID: bytes, message: bytes) -> bytes:
     """
     Long message (4096 bytes) to group
-    :param groupID: 
-    :param message: 
-    :return: 
+    :param groupID:
+    :param message:
+    :return:
     """
     return wrap(b"g" + b"G" + b"G" + groupID + message)
 
@@ -122,8 +114,8 @@ def longGroupMessage(groupID: bytes, message: bytes) -> bytes:
 def longMessage2all(message: bytes) -> bytes:
     """
     Long message (4096 bytes) to all units
-    :param message: 
-    :return: 
+    :param message:
+    :return:
     """
     return wrap(b"g" + b"G" + b"G" + b"00000" + message)
 
@@ -131,9 +123,9 @@ def longMessage2all(message: bytes) -> bytes:
 def longMessage2Unit(unitID: bytes, message: bytes) -> bytes:
     """
     Long message (4096 bytes) to one unit
-    :param unitID: 
-    :param message: 
-    :return: 
+    :param unitID:
+    :param message:
+    :return:
     """
     return wrap(b"g" + b"G" + b"U" + unitID + message)
 
@@ -142,9 +134,9 @@ def longMessage2Unit(unitID: bytes, message: bytes) -> bytes:
 def setGroupStatus(groupID: bytes, status: bytes) -> bytes:
     """
     Sets the status for a group
-    :param groupID: 
-    :param status: 
-    :return: 
+    :param groupID:
+    :param status:
+    :return:
     """
     return wrap(b"g" + b"E" + b"G" + groupID + status)
 
@@ -152,9 +144,9 @@ def setGroupStatus(groupID: bytes, status: bytes) -> bytes:
 def setUnitStatus(unitID: bytes, status: bytes) -> bytes:
     """
     Sets the status for a unit
-    :param unitID: 
-    :param status: 
-    :return: 
+    :param unitID:
+    :param status:
+    :return:
     """
     return wrap(b"g" + b"E" + b"U" + unitID + status)
 

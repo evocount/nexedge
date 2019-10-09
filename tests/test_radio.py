@@ -1,10 +1,3 @@
-"""
-Copyright (C) EvoCount UG - All Rights Reserved
-Unauthorized copying of this file, via any medium is strictly prohibited
-Proprietary and confidential
-
-Suthep Pomjaksilp <sp@laz0r.de> 2018
-"""
 from tests.fixtures import radio, no_radio
 import nexedge.exceptions
 
