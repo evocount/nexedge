@@ -1,5 +1,4 @@
 import asyncio
-from asyncio.futures import TimeoutError
 import serial
 import logging
 
@@ -330,7 +329,7 @@ class Radio:
                 result = await asyncio.wait_for(self._command_return,
                                                 self.confirmation_timeout)
                 logger.debug(f"write result {result}")
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 logger.error("confirmation of write timed out")
                 raise ConfirmationTimeout
             finally:
@@ -380,7 +379,7 @@ class Radio:
                     # inactivity is implemented
                     await asyncio.wait_for(self.channel.wait_for_free(),
                                            self.channel_timeout)
-                except TimeoutError:
+                except asyncio.TimeoutError:
                     raise ChannelTimeout
 
             logger.debug("channel is free")
