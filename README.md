@@ -1,3 +1,7 @@
+[![PyPI version](https://badge.fury.io/py/nexedge.svg)](https://badge.fury.io/py/nexedge)
+[![Build Status](https://travis-ci.org/evocount/nexedge.svg?branch=master)](https://travis-ci.org/evocount/nexedge)
+[![codecov](https://codecov.io/gh/evocount/nexedge/branch/master/graph/badge.svg)](https://codecov.io/gh/evocount/nexedge)
+
 # EvoCount nexedge radio communication
 This module provides high level data transmission via radio link using Kenwood Nexedge devices.
 
